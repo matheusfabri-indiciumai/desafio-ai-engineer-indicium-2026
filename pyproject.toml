@@ -1,0 +1,71 @@
+[project]
+name = "desafio-ai-engineer-indicium-2026"
+version = "0.1.0"
+description = "Solução proposta para a resolução do desafio Artificial Intelligence Engineer Certification -- Indicium AI 2026."
+authors = [
+    {name = "Matheus Fabri", email = "matheus.fabri@indicium.ai"},
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph==1.2.18",
+    "matplotlib==3.11.2",
+    "mlflow==3.17.2",
+    "pandas==3.1.0",
+    "python-dotenv==1.2.4",
+    "langchain-anthropic==1.7.7"
+]
+
+[project.optional-dependencies]
+dev = [
+    "basedpyright==1.40.2",
+    "pre-commit==4.6.2",
+    "ruff==0.16.10",
+    "ipykernel==7.4.0"
+]
+
+[tool.basedpyright]
+exclude = [".venv", "build", "dist"]
+
+[tool.ruff]
+extend-exclude = [".venv", "build", "dist"]
+force-exclude = true
+line-length = 100
+indent-width = 4
+target-version = "py311"
+
+# Ruff configuration
+[tool.ruff.lint]
+# Lean default rule set for a starter; expand per project needs
+select = [
+    "E",   # pycodestyle: Basic Python style
+    "F",   # pyflakes: Detect various errors
+    "I",   # isort: Import sorting
+    "B",   # flake8-bugbear: Bug detection
+    "Q",   # flake8-quotes: Consistent quotes
+    "A",   # flake8-builtins: Don't shadow builtins
+    "C4",  # flake8-comprehensions: Better comprehensions
+    "T20", # flake8-print: Detect print statements
+    "RET", # flake8-return: Return statement consistency
+    "SIM", # flake8-simplify: Code simplification
+    "ARG", # flake8-unused-arguments: Detect unused args
+    "UP",  # pyupgrade: Use modern Python
+    "RUF", # Ruff-specific rules
+    "PT",  # flake8-pytest-style
+]
+ignore = ["T201"]
+pydocstyle.convention = "google"
+# Which rules can auto-fix your code (safe subset)
+fixable = ["A", "ARG", "B", "C4", "E", "F", "I", "PT", "Q", "RET", "RUF", "SIM", "T20", "UP"]
+
+# Allow unused variables when they start with underscore
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true

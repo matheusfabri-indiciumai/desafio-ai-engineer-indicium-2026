@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Validate that the commit message header follows this repo's Conventional
+# Commits convention (see .claude/skills/stage-and-commit): "<tipo>: <resumo>"
+# with tipo in feat|fix|refactor|chore|docs|test.
+set -euo pipefail
+
+commit_msg_file="$1"
+header="$(head -n 1 "$commit_msg_file")"
+
+# Allow merge commits and fixup!/squash! commits through untouched.
+if [[ "$header" =~ ^Merge ]] || [[ "$header" =~ ^(fixup|squash)! ]]; then
+    exit 0
+fi
+
+allowed_types="feat|fix|refactor|chore|docs|test"
+pattern="^(${allowed_types}): .+"
+
+if ! [[ "$header" =~ $pattern ]]; then
+    echo "Commit message header does not follow Conventional Commits format." >&2
+    echo "Expected: <tipo>: <resumo>, with tipo one of: feat, fix, refactor, chore, docs, test" >&2
+    echo "Got: ${header}" >&2
+    exit 1
+fi
