@@ -106,11 +106,11 @@ A seguir detalhamos as etapas para o desenvolvimento do desafio.
 Nesta etapa focamos na análise exploratória dos dados e no desenvolvimento do pipeline de processamento dos dados. Temos:
 
 - [X] Análise exploratória dos dados via Jupyter notebooks.
-- [ ] Script de processamento dos dados:
+- [X] Script de processamento dos dados:
   - [X] Download do dataset.
   - [X] Limpeza dos dados e processamento.
   - [X] Salvar a base de dados processada em disco.
-  - [ ] Salvar os gráficos dos números diários e mensais.
+  - [X] Salvar os gráficos dos números diários e mensais.
 
 ### 2 - Fluxo Agêntico
 

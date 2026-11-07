@@ -3,7 +3,7 @@
 ## Comando
 
 ```bash
-uv run src/data_fetching_processing.py <url_fonte> [-fp <filepath>]
+uv run src/data_fetching_processing.py <url_fonte> [-f <filepath>]
 ```
 
 URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-19-10-2026.parquet"

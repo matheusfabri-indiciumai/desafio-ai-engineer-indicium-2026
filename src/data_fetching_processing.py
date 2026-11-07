@@ -1,23 +1,14 @@
 """TODO: desc arquivo"""
 
 import argparse
-import logging
 from pathlib import Path
 
 import pandas as pd
 
-from utils import filtrar_dataset_casos, plot_num_casos
+from utils import build_logger, filtrar_dataset_casos, plot_num_casos
 
 # definir logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    filename=f"{Path(__file__).name}.log",
-    filemode="w",
-)
-
-logger = logging.getLogger(__name__)
+logger = build_logger(Path(__file__).name)
 
 # parsear variáveis
 

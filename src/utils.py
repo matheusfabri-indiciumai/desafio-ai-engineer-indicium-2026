@@ -1,8 +1,11 @@
 """Funções utilitárias para a série temporal de casos de SRAG.
 
 Reúne as funções usadas pelo script de processamento para calcular o número diário de
-casos dentro de uma janela de tempo e para salvar o gráfico dessa série em arquivo.
+casos dentro de uma janela de tempo, salvar o gráfico dessa série em arquivo e
+configurar o logging em arquivo.
 """
+
+import logging
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -63,3 +66,28 @@ def plot_num_casos(serie, title, eixo_x, eixo_y, filepath, figsize=(10, 5), mark
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(filepath)
+
+
+def build_logger(program_name):
+    """Configura o logging em arquivo e devolve o logger do módulo.
+
+    Chama `logging.basicConfig` com nível `INFO`, formato `data - nível - mensagem` e
+    escrita no arquivo `<program_name>.log`, criado no diretório de execução e
+    sobrescrito a cada execução (`filemode="w"`). Como `basicConfig` só tem efeito na
+    primeira chamada, chamadas seguintes não alteram a configuração.
+
+    Args:
+        program_name: Nome do programa que usa o log, usado para nomear o arquivo. Por
+            exemplo, `Path(__file__).name` gera `<script>.py.log`.
+
+    Returns:
+        Logger com o nome deste módulo (`utils`), não o do programa chamador.
+    """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        filename=f"{program_name}.log",
+        filemode="w",
+    )
+
+    return logging.getLogger(__name__)
