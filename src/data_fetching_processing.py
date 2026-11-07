@@ -6,12 +6,14 @@ from pathlib import Path
 
 import pandas as pd
 
+from utils import filtrar_dataset_casos, plot_num_casos
+
 # definir logging
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    filename="app.log",
+    filename=f"{Path(__file__).name}.log",
     filemode="w",
 )
 
@@ -42,9 +44,13 @@ FILEPATH = args.filepath
 logger.info("variáveis parseadas com sucesso")
 
 # carregar em um dataframe o arquivo parquet
-df = pd.read_parquet(
-    path=URL_DOWNLOAD, columns=["NU_NOTIFIC", "DT_SIN_PRI", "EVOLUCAO", "VACINA_COV", "UTI"]
-)
+try:
+    df = pd.read_parquet(
+        path=URL_DOWNLOAD, columns=["NU_NOTIFIC", "DT_SIN_PRI", "EVOLUCAO", "VACINA_COV", "UTI"]
+    )
+except Exception:
+    logger.exception("falha ao baixar ou ler o dataset")
+    raise
 
 # rotular dados
 evolucao = {"1": "cura", "2": "obito", "3": "obito"}
@@ -63,5 +69,34 @@ pct_dados_descartados = (len(df) - len(df_cleaned)) * 100 / len(df)
 logger.info(f"porcentagem de dados descartados: {pct_dados_descartados:.3f}")
 
 # salvar dataset na forma final
-df_cleaned.to_parquet(FILEPATH, index=False)
-logger.info("dados salvos")
+try:
+    Path(FILEPATH).parent.mkdir(parents=True, exist_ok=True)
+    df_cleaned.to_parquet(FILEPATH, index=False)
+except Exception:
+    logger.exception("falha ao salvar o dataset")
+    raise
+logger.info(f"dados salvos em {FILEPATH}")
+
+# criar os gráficos e salvar em png
+
+PLOTS_DIR = ROOT / "plots"
+PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+
+df_reduced_30_d = filtrar_dataset_casos(df_cleaned, "DT_SIN_PRI", 30, "NU_NOTIFIC")
+df_reduced_12_m = filtrar_dataset_casos(df_cleaned, "DT_SIN_PRI", 365, "NU_NOTIFIC")
+
+plot_num_casos(
+    serie=df_reduced_30_d,
+    title="Número de casos últimos 30 dias",
+    eixo_x="Data",
+    eixo_y="Número de casos",
+    filepath=PLOTS_DIR / "num_casos_30_dias.png",
+)
+
+plot_num_casos(
+    serie=df_reduced_12_m,
+    title="Número de casos últimos 12 meses",
+    eixo_x="Data",
+    eixo_y="Número de casos",
+    filepath=PLOTS_DIR / "num_casos_12_meses.png",
+)
