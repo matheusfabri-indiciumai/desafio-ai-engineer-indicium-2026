@@ -11,6 +11,7 @@ final.
 from typing import Annotated, Any, Literal
 
 import pandas as pd
+from anthropic.types import WebFetchTool20250910Param, WebSearchTool20260209Param
 from langchain.tools import tool
 from langgraph.prebuilt import InjectedState
 
@@ -216,7 +217,23 @@ def crescimento_mensal_ultimos_12_m(
     return crescimento_mensal_ultimos_12_m.round(2).to_json()
 
 
-# tool busca de noticias SRAG
+# tool busca e fetch de noticias SRAG
+
+dominios_permitidos = [
+    "cnnbrasil.com.br",
+    "agencia.fiocruz.br",
+    "agenciabrasil.ebc.com.br",
+    "gov.br/saude/pt-br",
+    "gov.br/saude/pt-br/composicao/svsa/cnie/sindromes-gripais/srag",
+]
+
+coleta_web = WebFetchTool20250910Param(
+    name="web_fetch", type="web_fetch_20250910", max_uses=5, allowed_domains=dominios_permitidos
+)
+
+busca_web = WebSearchTool20260209Param(
+    name="web_search", type="web_search_20260209", max_uses=5, allowed_domains=dominios_permitidos
+)
 
 # tool taxa de vacinação
 

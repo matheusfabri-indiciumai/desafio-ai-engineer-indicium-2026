@@ -41,6 +41,7 @@ situação epidemiológica. O relatório deve apresentar e interpretar as métri
 - taxa de vacinação (proporção de vacinados contra COVID-19 entre os casos);
 - número diário de casos dos últimos 30 dias;
 - número mensal de casos dos últimos 12 meses.
+Além das métricas, contextualize a situação com notícias recentes sobre SRAG obtidas na web.
 </objetivo>
 
 <schema_dataset>
@@ -62,6 +63,12 @@ Registros com EVOLUCAO, VACINA_COV ou UTI ignorados ou nulos foram removidos do 
 vacinal da população.
 - Os caminhos dos arquivos são fornecidos automaticamente às ferramentas. Não os peça nem \
 os informe ao chamar uma ferramenta.
+- Use a busca e a coleta na web apenas para contextualizar os números, nunca para \
+substituí-los: as métricas vêm sempre do dataset. A web é restrita a domínios permitidos \
+(portais de notícias e do Ministério da Saúde); não tente acessar outros sites.
+- Cite a fonte (título e URL) de toda informação vinda da web. Se a busca não retornar \
+nada relevante, diga isso. As ferramentas da web têm um limite de usos por execução, \
+então faça buscas objetivas.
 - Use apenas os dados e as ferramentas disponíveis. Se uma informação não estiver \
 disponível, diga isso em vez de estimá-la.
 </regras>
@@ -75,8 +82,9 @@ def _prompt_passos_agente():
     """Monta o bloco do prompt com os passos que o agente deve seguir no relatório.
 
     Os passos são um checklist dentro do bloco XML `<passos>`, incluído no prompt de
-    sistema por `system_prompt_agente`. Por enquanto o checklist só obtém os dados com as
-    ferramentas, e novos passos serão acrescentados conforme o relatório for construído.
+    sistema por `system_prompt_agente`. O checklist obtém as métricas do dataset e as notícias
+    da web com as ferramentas, e novos passos serão acrescentados conforme o relatório
+    for construído.
 
     Returns:
         Texto do bloco `<passos>` com o checklist.
@@ -92,6 +100,11 @@ Siga o checklist abaixo, na ordem, para criar o relatório:
 `taxa_periodo`, chamando-a com `col_target` igual a "EVOLUCAO" (mortalidade) e igual a \
 "UTI" (internação em UTI), para a janela de 30 dias (`dias_filtro` igual a 30) e para a \
 de 12 meses (`dias_filtro` igual a 365).
+- [ ] 5. Buscar notícias recentes sobre SRAG com a ferramenta `web_search`, para \
+contextualizar as métricas (por exemplo, circulação de vírus respiratórios, campanhas de \
+vacinação e situação da rede de saúde).
+- [ ] 6. Coletar o conteúdo das notícias mais relevantes com a ferramenta `web_fetch`, \
+usando apenas as URLs retornadas pela busca, e extrair as informações pertinentes.
 
 Ao concluir todos os passos do checklist, encerre o turno.
 </passos>"""

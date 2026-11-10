@@ -22,6 +22,8 @@ from langgraph.prebuilt import ToolNode, tools_condition
 
 from src.agent import system_prompt_agente
 from src.tools import (
+    busca_web,
+    coleta_web,
     crescimento_mensal_ultimos_12_m,
     dataframe_info,
     num_casos_mensal_ultimos_12_m,
@@ -62,7 +64,7 @@ class EstadoAgente(TypedDict):
 
 # definição do modelo
 llm = ChatAnthropic(model=MODEL_ANTHROPIC)
-llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
+llm_with_tools = llm.bind_tools([*tools, coleta_web, busca_web])
 
 # definição do grafo
 builder = StateGraph(EstadoAgente)
