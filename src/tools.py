@@ -6,10 +6,11 @@ crescimento mês a mês. O módulo está em desenvolvimento: as demais ferrament
 planejadas estão indicadas nos comentários ao final.
 """
 
-from typing import Any
+from typing import Annotated, Any
 
 import pandas as pd
 from langchain.tools import tool
+from langgraph.prebuilt import InjectedState
 
 from src.utils import filtrar_dataset_casos
 
@@ -82,7 +83,7 @@ def _num_mensal_casos(df):
 
 
 @tool
-def dataframe_info(filepath: str) -> dict[str, Any]:
+def dataframe_info(filepath: Annotated[str, InjectedState("filepath_dataset")]) -> dict[str, Any]:
     """Resume as informações básicas do dataset e o número de casos por janela de tempo.
 
     As janelas de 30 dias e 12 meses (365 dias) terminam na data mais recente de
@@ -124,7 +125,9 @@ def dataframe_info(filepath: str) -> dict[str, Any]:
 
 
 @tool
-def num_casos_mensal_ultimos_12_m(filepath: str) -> str:
+def num_casos_mensal_ultimos_12_m(
+    filepath: Annotated[str, InjectedState("filepath_dataset")],
+) -> str:
     """Calcula o número mensal de casos dos últimos 12 meses.
 
     Usa os dados dos últimos 12 meses (365 dias até a data mais recente de primeiros
@@ -152,7 +155,9 @@ def num_casos_mensal_ultimos_12_m(filepath: str) -> str:
 
 
 @tool
-def crescimento_mensal_ultimos_12_m(filepath: str) -> str:
+def crescimento_mensal_ultimos_12_m(
+    filepath: Annotated[str, InjectedState("filepath_dataset")],
+) -> str:
     """Calcula o crescimento mês a mês do número de casos dos últimos 12 meses.
 
     Usa os dados dos últimos 12 meses (365 dias até a data mais recente de primeiros

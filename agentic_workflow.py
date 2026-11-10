@@ -1,4 +1,14 @@
-"""TODO: docstring"""
+"""Fluxo agêntico que gera o relatório de SRAG com LangGraph e o Claude.
+
+O grafo tem dois nós em ciclo: `assistente`, que chama o modelo com as ferramentas, e
+`tools`, que executa as ferramentas pedidas. O ciclo termina quando o modelo responde sem
+pedir novas ferramentas. O estado do agente (`EstadoAgente`) guarda as mensagens e os
+caminhos dos arquivos, que são injetados nas ferramentas em vez de passados pelo modelo.
+
+Ao executar, o script grava o diagrama do grafo em `graph_agentic_workflow.png`, roda o
+agente com o pedido do relatório e registra as mensagens no arquivo de log. Requer a
+variável de ambiente `ANTHROPIC_API_KEY`, por exemplo em um arquivo `.env`.
+"""
 
 from pathlib import Path
 from typing import Annotated, TypedDict
@@ -36,6 +46,9 @@ PLOT_30_D = "./plots/num_casos_30_dias.png"
 
 # definição estado do agente
 class EstadoAgente(TypedDict):
+    filepath_dataset: str
+    plot_num_casos_12_m: str
+    plot_num_casos_30_d: str
     messages: Annotated[list[AnyMessage], add_messages]
 
 
@@ -49,9 +62,7 @@ builder = StateGraph(EstadoAgente)
 
 # definição do nós
 def assistente(state: EstadoAgente):
-    sys_msg = system_prompt_agente(
-        filepath=LOCAL_FILEPATH, plot_num_casos_12_m=PLOT_12_M, plot_num_casos_30_d=PLOT_30_D
-    )
+    sys_msg = system_prompt_agente()
 
     return {"messages": [llm_with_tools.invoke([sys_msg] + state["messages"])]}
 
@@ -76,7 +87,12 @@ srag_reporter.get_graph().draw_mermaid_png(output_file_path="graph_agentic_workf
 
 # execução do app
 if __name__ == "__main__":
-    query = {"messages": [("user", "Faça o relatório de SRAG.")]}
+    query = {
+        "messages": [("user", "Faça o relatório de SRAG.")],
+        "filepath_dataset": LOCAL_FILEPATH,
+        "plot_num_casos_12_m": PLOT_12_M,
+        "plot_num_casos_30_d": PLOT_30_D,
+    }
 
     response = srag_reporter.invoke(query)
     for message in response["messages"]:

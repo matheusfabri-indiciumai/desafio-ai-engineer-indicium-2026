@@ -1,7 +1,7 @@
 """Definições do agente que gera o relatório de SRAG.
 
-Reúne a construção do prompt de sistema do agente, com o contexto, o objetivo, os
-arquivos de entrada e a descrição do dataset processado.
+Reúne a construção do prompt de sistema do agente, com o contexto, o objetivo, a
+descrição do dataset processado, as regras e os passos a seguir.
 """
 
 from langchain_core.messages import SystemMessage
@@ -9,20 +9,14 @@ from langchain_core.messages import SystemMessage
 # prompts
 
 
-def system_prompt_agente(filepath, plot_num_casos_30_d, plot_num_casos_12_m):
+def system_prompt_agente():
     """Monta o prompt de sistema do agente que cria o relatório de SRAG.
 
     O prompt é dividido em blocos XML: `<contexto>` (o que é SRAG), `<objetivo>` (o que o
-    agente deve produzir), `<inputs>` (caminhos dos arquivos), `<schema_dataset>`
-    (colunas, tipos e valores do dataset), `<regras>` (premissas e limitações dos dados)
-    e `<passos>` (checklist que o agente deve seguir, montado por `_prompt_passos_agente`).
-
-    Args:
-        filepath: Caminho do arquivo parquet com o dataset processado.
-        plot_num_casos_30_d: Caminho da imagem com o gráfico do número diário de casos
-            dos últimos 30 dias.
-        plot_num_casos_12_m: Caminho da imagem com o gráfico do número de casos dos
-            últimos 12 meses.
+    agente deve produzir), `<schema_dataset>` (colunas, tipos e valores do dataset),
+    `<regras>` (premissas e limitações dos dados) e `<passos>` (checklist que o agente
+    deve seguir, montado por `_prompt_passos_agente`). Os caminhos dos arquivos não
+    aparecem no prompt: são injetados do estado do agente nas ferramentas.
 
     Returns:
         Mensagem de sistema com o prompt do agente.
@@ -49,12 +43,6 @@ situação epidemiológica. O relatório deve apresentar e interpretar as métri
 - número mensal de casos dos últimos 12 meses.
 </objetivo>
 
-<inputs>
-<filepath_dataset>{filepath}</filepath_dataset>
-<grafico_ultimos_30_dias>{plot_num_casos_30_d}</grafico_ultimos_30_dias>
-<grafico_ultimos_12_meses>{plot_num_casos_12_m}</grafico_ultimos_12_meses>
-</inputs>
-
 <schema_dataset>
 O dataset é um arquivo parquet com um registro por caso notificado e as colunas:
 - NU_NOTIFIC (str): número de registro sequencial da notificação, identifica o caso.
@@ -72,6 +60,8 @@ Registros com EVOLUCAO, VACINA_COV ou UTI ignorados ou nulos foram removidos do 
 <regras>
 - A taxa de vacinação é a proporção de vacinados entre os casos de SRAG, não a cobertura \
 vacinal da população.
+- Os caminhos dos arquivos são fornecidos automaticamente às ferramentas. Não os peça nem \
+os informe ao chamar uma ferramenta.
 - Use apenas os dados e as ferramentas disponíveis. Se uma informação não estiver \
 disponível, diga isso em vez de estimá-la.
 </regras>
@@ -93,11 +83,10 @@ def _prompt_passos_agente():
     """
     return """<passos>
 Siga o checklist abaixo, na ordem, para criar o relatório:
-- [ ] 1. Ler as informações do dataset com a ferramenta `dataframe_info`, usando o caminho \
-em <filepath_dataset>.
+- [ ] 1. Ler as informações do dataset com a ferramenta `dataframe_info`.
 - [ ] 2. Obter o número mensal de casos dos últimos 12 meses com a ferramenta \
 `num_casos_mensal_ultimos_12_m` e o crescimento mês a mês com a ferramenta \
-`crescimento_mensal_ultimos_12_m`, usando o caminho em <filepath_dataset>.
+`crescimento_mensal_ultimos_12_m`.
 
 Ao concluir todos os passos do checklist, encerre o turno.
 </passos>"""
