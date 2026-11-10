@@ -3,7 +3,7 @@
 ## Comando
 
 ```bash
-uv run src/data_fetching_processing.py <url_fonte> [-f <filepath>]
+uv run data_fetching_processing.py <url_fonte> [-f <filepath>]
 ```
 
 URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-19-10-2026.parquet"
@@ -21,7 +21,6 @@ URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-1
 ├── src/
 │   ├── __init__.py
 │   ├── agent.py                     # Estado do agente (em desenvolvimento)
-│   ├── data_fetching_processing.py  # Script de download, limpeza e gráficos dos dados
 │   ├── tools.py                     # Ferramentas do agente (em desenvolvimento)
 │   └── utils.py                     # Funções utilitárias: filtro de casos, gráfico e logger
 ├── .env.example                     # Modelo das variáveis de ambiente (copie para .env e preencha)
@@ -29,6 +28,7 @@ URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-1
 ├── .pre-commit-config.yaml          # Hooks de pre-commit (ruff, basedpyright, entre outros)
 ├── .python-version                  # Versão do Python usada no projeto
 ├── agentic_workflow.py              # Fluxo agêntico com LangGraph (em desenvolvimento)
+├── data_fetching_processing.py      # Script de download, limpeza e gráficos dos dados
 ├── eda.ipynb                        # Análise exploratória dos dados
 ├── pyproject.toml                   # Dependências e configuração das ferramentas (ruff, basedpyright)
 ├── README.md

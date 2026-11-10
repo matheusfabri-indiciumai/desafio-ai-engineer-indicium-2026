@@ -5,14 +5,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from utils import build_logger, filtrar_dataset_casos, plot_num_casos
+from src.utils import build_logger, filtrar_dataset_casos, plot_num_casos
 
 # definir logging
 logger = build_logger(Path(__file__).name)
 
 # parsear variáveis
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent
 
 parser = argparse.ArgumentParser(
     prog="data_fetching_processing",
