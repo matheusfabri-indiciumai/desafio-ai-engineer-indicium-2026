@@ -14,9 +14,10 @@ def system_prompt_agente():
 
     O prompt é dividido em blocos XML: `<contexto>` (o que é SRAG), `<objetivo>` (o que o
     agente deve produzir), `<schema_dataset>` (colunas, tipos e valores do dataset),
-    `<regras>` (premissas e limitações dos dados) e `<passos>` (checklist que o agente
-    deve seguir, montado por `_prompt_passos_agente`). Os caminhos dos arquivos não
-    aparecem no prompt: são injetados do estado do agente nas ferramentas.
+    `<regras>` (premissas, limitações dos dados e uso da web) e `<passos>` (checklist
+    que o agente deve seguir, com as métricas do dataset e a busca de notícias, montado
+    por `_prompt_passos_agente`). Os caminhos dos arquivos não aparecem no prompt: são
+    injetados do estado do agente nas ferramentas.
 
     Returns:
         Mensagem de sistema com o prompt do agente.

@@ -1,11 +1,17 @@
-"""Ferramentas do agente para consultar os dados de SRAG.
+"""Ferramentas do agente para consultar os dados de SRAG e a web.
 
-Cada ferramenta lê o dataset processado e devolve um resumo com as métricas pedidas:
-informações básicas do dataset, série mensal de casos dos últimos 12 meses e seu
-crescimento mês a mês, situação de vacinação e contagem de casos por categoria em um
-período (base das taxas de mortalidade e de internação em UTI). O módulo está em
-desenvolvimento: as demais ferramentas planejadas estão indicadas nos comentários ao
-final.
+As ferramentas locais leem o dataset processado e devolvem um resumo com as métricas
+pedidas: informações básicas do dataset, série mensal de casos dos últimos 12 meses e
+seu crescimento mês a mês, situação de vacinação e contagem de casos por categoria em um
+período (base das taxas de mortalidade e de internação em UTI). O caminho do dataset é
+injetado do estado do agente.
+
+O módulo também define as ferramentas de busca (`busca_web`) e de coleta (`coleta_web`)
+na web do Claude, restritas a domínios permitidos. Elas rodam nos servidores da
+Anthropic, por isso são ligadas só ao modelo e não ao `ToolNode`.
+
+O módulo está em desenvolvimento: as demais ferramentas planejadas estão indicadas nos
+comentários ao final.
 """
 
 from typing import Annotated, Any, Literal
@@ -122,7 +128,8 @@ def dataframe_info(filepath: Annotated[str, InjectedState("filepath_dataset")]) 
     primeiros sintomas (`DT_SIN_PRI`), tratada como "hoje".
 
     Args:
-        filepath: Caminho do arquivo parquet com o dataset processado.
+        filepath: Caminho do arquivo parquet com o dataset processado. É injetado do estado
+            (`filepath_dataset`), e o modelo não o informa.
 
     Returns:
         Dicionário serializável em JSON, com tipos nativos do Python (datas como texto
@@ -167,7 +174,8 @@ def num_casos_mensal_ultimos_12_m(
     parciais.
 
     Args:
-        filepath: Caminho do arquivo parquet com o dataset processado.
+        filepath: Caminho do arquivo parquet com o dataset processado. É injetado do estado
+            (`filepath_dataset`), e o modelo não o informa.
 
     Returns:
         Texto JSON que mapeia o último dia de cada mês (`AAAA-MM-DD`) ao número de casos
@@ -200,7 +208,8 @@ def crescimento_mensal_ultimos_12_m(
     variação tende a ser fortemente negativa sem representar uma queda real.
 
     Args:
-        filepath: Caminho do arquivo parquet com o dataset processado.
+        filepath: Caminho do arquivo parquet com o dataset processado. É injetado do estado
+            (`filepath_dataset`), e o modelo não o informa.
 
     Returns:
         Texto JSON que mapeia o último dia de cada mês (`AAAA-MM-DD`) ao crescimento
@@ -249,7 +258,8 @@ def taxa_de_vacinacao(
     não a cobertura vacinal da população.
 
     Args:
-        filepath: Caminho do arquivo parquet com o dataset processado.
+        filepath: Caminho do arquivo parquet com o dataset processado. É injetado do estado
+            (`filepath_dataset`), e o modelo não o informa.
 
     Returns:
         Texto JSON com, para as categorias `vacinado` e `nao_vacinado`, o número de
@@ -285,7 +295,8 @@ def taxa_periodo(
         dias_filtro: Tamanho da janela, em dias.
         col_target: Coluna categórica a contar: `EVOLUCAO` (mortalidade) ou `UTI`
             (internação em UTI).
-        filepath: Caminho do arquivo parquet com o dataset processado.
+        filepath: Caminho do arquivo parquet com o dataset processado. É injetado do estado
+            (`filepath_dataset`), e o modelo não o informa.
 
     Returns:
         Texto JSON com, para cada categoria de `col_target`, o número de casos

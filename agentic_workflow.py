@@ -1,9 +1,11 @@
 """Fluxo agêntico que gera o relatório de SRAG com LangGraph e o Claude.
 
 O grafo tem dois nós em ciclo: `assistente`, que chama o modelo com as ferramentas, e
-`tools`, que executa as ferramentas pedidas. O ciclo termina quando o modelo responde sem
-pedir novas ferramentas. O estado do agente (`EstadoAgente`) guarda as mensagens e os
-caminhos dos arquivos, que são injetados nas ferramentas em vez de passados pelo modelo.
+`tools`, que executa as ferramentas locais pedidas. As ferramentas da web (`busca_web` e
+`coleta_web`) são ligadas só ao modelo e rodam nos servidores da Anthropic. O ciclo
+termina quando o modelo responde sem pedir novas ferramentas. O estado do agente
+(`EstadoAgente`) guarda as mensagens e os caminhos dos arquivos, que são injetados nas
+ferramentas locais em vez de passados pelo modelo.
 
 Ao executar, o script grava o diagrama do grafo em `graph_agentic_workflow.png`, roda o
 agente com o pedido do relatório e registra as mensagens no arquivo de log. Requer a

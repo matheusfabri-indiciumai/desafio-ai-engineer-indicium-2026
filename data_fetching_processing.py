@@ -1,4 +1,13 @@
-"""TODO: desc arquivo"""
+"""Baixa o dataset de SRAG do Open DATASUS, limpa os dados e gera os gráficos de casos.
+
+Lê da URL passada como argumento só as colunas necessárias, rotula `EVOLUCAO`,
+`VACINA_COV` e `UTI`, descarta os registros com valores ignorados ou nulos e salva o
+dataset limpo em parquet. Também grava em `plots/` os gráficos do número diário de casos
+dos últimos 30 dias e dos últimos 12 meses (365 dias). O andamento é registrado em um
+arquivo de log.
+
+Uso: `uv run data_fetching_processing.py <url> [-f <filepath>]`.
+"""
 
 import argparse
 from pathlib import Path
