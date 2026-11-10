@@ -75,8 +75,8 @@ def _prompt_passos_agente():
     """Monta o bloco do prompt com os passos que o agente deve seguir no relatório.
 
     Os passos são um checklist dentro do bloco XML `<passos>`, incluído no prompt de
-    sistema por `system_prompt_agente`. Por enquanto há um único passo, e novos passos
-    serão acrescentados ao checklist conforme o relatório for construído.
+    sistema por `system_prompt_agente`. Por enquanto o checklist só obtém os dados com as
+    ferramentas, e novos passos serão acrescentados conforme o relatório for construído.
 
     Returns:
         Texto do bloco `<passos>` com o checklist.
@@ -87,6 +87,11 @@ Siga o checklist abaixo, na ordem, para criar o relatório:
 - [ ] 2. Obter o número mensal de casos dos últimos 12 meses com a ferramenta \
 `num_casos_mensal_ultimos_12_m` e o crescimento mês a mês com a ferramenta \
 `crescimento_mensal_ultimos_12_m`.
+- [ ] 3. Obter a taxa de vacinação com a ferramenta `taxa_de_vacinacao`.
+- [ ] 4. Obter as taxas de mortalidade e de internação em UTI com a ferramenta \
+`taxa_periodo`, chamando-a com `col_target` igual a "EVOLUCAO" (mortalidade) e igual a \
+"UTI" (internação em UTI), para a janela de 30 dias (`dias_filtro` igual a 30) e para a \
+de 12 meses (`dias_filtro` igual a 365).
 
 Ao concluir todos os passos do checklist, encerre o turno.
 </passos>"""

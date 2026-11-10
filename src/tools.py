@@ -2,11 +2,13 @@
 
 Cada ferramenta lê o dataset processado e devolve um resumo com as métricas pedidas:
 informações básicas do dataset, série mensal de casos dos últimos 12 meses e seu
-crescimento mês a mês. O módulo está em desenvolvimento: as demais ferramentas
-planejadas estão indicadas nos comentários ao final.
+crescimento mês a mês, situação de vacinação e contagem de casos por categoria em um
+período (base das taxas de mortalidade e de internação em UTI). O módulo está em
+desenvolvimento: as demais ferramentas planejadas estão indicadas nos comentários ao
+final.
 """
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 import pandas as pd
 from langchain.tools import tool
@@ -77,6 +79,35 @@ def _num_mensal_casos(df):
     num_casos_12_m.index = num_casos_12_m.index.astype("str")
 
     return num_casos_12_m
+
+
+def _filtrar_dataframe_coluna(
+    df: pd.DataFrame, dt_col_filtro: str, dias_filtro: int, col_target: str
+) -> pd.DataFrame:
+    """Conta os casos por categoria de uma coluna dentro de uma janela de tempo.
+
+    A janela termina na data máxima de `dt_col_filtro` e contém somente as datas
+    estritamente posteriores a `max_date - dias_filtro`, ou seja, exatamente
+    `dias_filtro` dias de calendário.
+
+    Args:
+        df: DataFrame com os casos e a coluna `NU_NOTIFIC`.
+        dt_col_filtro: Nome da coluna de data usada para filtrar.
+        dias_filtro: Tamanho da janela, em dias, contado a partir da data máxima.
+        col_target: Nome da coluna categórica cujas categorias são contadas.
+
+    Returns:
+        DataFrame indexado pelas categorias de `col_target`, com a coluna `NU_NOTIFIC`
+        com o número de casos de cada categoria.
+    """
+    # encontrar data máxima
+    max_date = df[dt_col_filtro].max()
+    initial = max_date - pd.Timedelta(days=dias_filtro)
+
+    # filtrar o dataset
+    df_reduced = df[df[dt_col_filtro] > initial]
+
+    return df_reduced.groupby(col_target).count()[["NU_NOTIFIC"]]
 
 
 # tool para pegar informações básicas acerca dos dados
@@ -185,15 +216,79 @@ def crescimento_mensal_ultimos_12_m(
     return crescimento_mensal_ultimos_12_m.round(2).to_json()
 
 
-# tool estatistica numero de casos
-
 # tool busca de noticias SRAG
 
 # tool taxa de vacinação
 
-# tool taxa de mortalidade
 
-# tool taxa de internação
+@tool
+def taxa_de_vacinacao(
+    filepath: Annotated[str, InjectedState("filepath_dataset")],
+) -> str:
+    """Calcula o número de casos por situação de vacinação contra COVID-19.
+
+    Usa todo o dataset, sem filtro de período. A porcentagem de cada situação é calculada
+    sobre o total de casos de SRAG, então é a proporção de vacinados entre os casos, e
+    não a cobertura vacinal da população.
+
+    Args:
+        filepath: Caminho do arquivo parquet com o dataset processado.
+
+    Returns:
+        Texto JSON com, para as categorias `vacinado` e `nao_vacinado`, o número de
+        casos (`NU_NOTIFIC`) e a porcentagem sobre o total (`pct_vacinados`, com 2 casas
+        decimais).
+    """
+    # carregar dataframe
+    df = _importar_dataset(filepath=filepath)
+
+    # taxa de vacinação
+    vacinados = df.groupby("VACINA_COV").count()[["NU_NOTIFIC"]]
+    vacinados["pct_vacinados"] = (vacinados["NU_NOTIFIC"] * 100 / len(df)).round(2)
+
+    return vacinados.to_json(orient="index")
+
+
+# tool taxa de mortalidade/internacao
+
+
+@tool
+def taxa_periodo(
+    dias_filtro: int,
+    col_target: Literal["EVOLUCAO", "UTI"],
+    filepath: Annotated[str, InjectedState("filepath_dataset")],
+) -> str:
+    """Calcula o número e a porcentagem de casos por categoria nos últimos `dias_filtro` dias.
+
+    A janela termina na data mais recente de primeiros sintomas (`DT_SIN_PRI`) e contém
+    exatamente `dias_filtro` dias. Serve para as taxas de mortalidade (`EVOLUCAO`) e de
+    internação em UTI (`UTI`).
+
+    Args:
+        dias_filtro: Tamanho da janela, em dias.
+        col_target: Coluna categórica a contar: `EVOLUCAO` (mortalidade) ou `UTI`
+            (internação em UTI).
+        filepath: Caminho do arquivo parquet com o dataset processado.
+
+    Returns:
+        Texto JSON com, para cada categoria de `col_target`, o número de casos
+        (`NU_NOTIFIC`) e a porcentagem sobre o total de casos da janela (`pct`, com 2
+        casas decimais).
+    """
+    # carregar dataframe
+    df = _importar_dataset(filepath=filepath)
+
+    # taxa
+    df_filtrado = _filtrar_dataframe_coluna(
+        df=df, dt_col_filtro="DT_SIN_PRI", dias_filtro=dias_filtro, col_target=col_target
+    )
+
+    df_filtrado["pct"] = (df_filtrado["NU_NOTIFIC"] * 100 / df_filtrado["NU_NOTIFIC"].sum()).round(
+        2
+    )
+
+    return df_filtrado.to_json(orient="index")
+
 
 # tool leitura de relatorio
 

@@ -25,6 +25,8 @@ from src.tools import (
     crescimento_mensal_ultimos_12_m,
     dataframe_info,
     num_casos_mensal_ultimos_12_m,
+    taxa_de_vacinacao,
+    taxa_periodo,
 )
 from src.utils import build_logger
 
@@ -34,7 +36,13 @@ logger = build_logger(Path(__file__).name)
 
 # tools
 
-tools = [dataframe_info, num_casos_mensal_ultimos_12_m, crescimento_mensal_ultimos_12_m]
+tools = [
+    dataframe_info,
+    num_casos_mensal_ultimos_12_m,
+    crescimento_mensal_ultimos_12_m,
+    taxa_de_vacinacao,
+    taxa_periodo,
+]
 
 load_dotenv()
 
