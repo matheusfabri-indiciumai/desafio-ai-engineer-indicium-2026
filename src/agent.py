@@ -95,6 +95,9 @@ def _prompt_passos_agente():
 Siga o checklist abaixo, na ordem, para criar o relatório:
 - [ ] 1. Ler as informações do dataset com a ferramenta `dataframe_info`, usando o caminho \
 em <filepath_dataset>.
+- [ ] 2. Obter o número mensal de casos dos últimos 12 meses com a ferramenta \
+`num_casos_mensal_ultimos_12_m` e o crescimento mês a mês com a ferramenta \
+`crescimento_mensal_ultimos_12_m`, usando o caminho em <filepath_dataset>.
 
 Ao concluir todos os passos do checklist, encerre o turno.
 </passos>"""

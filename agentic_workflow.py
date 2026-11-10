@@ -11,7 +11,11 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
 from src.agent import system_prompt_agente
-from src.tools import dataframe_info
+from src.tools import (
+    crescimento_mensal_ultimos_12_m,
+    dataframe_info,
+    num_casos_mensal_ultimos_12_m,
+)
 from src.utils import build_logger
 
 # definir logging
@@ -20,7 +24,7 @@ logger = build_logger(Path(__file__).name)
 
 # tools
 
-tools = [dataframe_info]
+tools = [dataframe_info, num_casos_mensal_ultimos_12_m, crescimento_mensal_ultimos_12_m]
 
 load_dotenv()
 

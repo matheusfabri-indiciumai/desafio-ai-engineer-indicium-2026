@@ -1,8 +1,9 @@
 """Ferramentas do agente para consultar os dados de SRAG.
 
-Cada ferramenta lê o dataset processado e devolve um resumo com as métricas pedidas.
-O módulo está em desenvolvimento: as demais ferramentas planejadas estão indicadas
-nos comentários ao final.
+Cada ferramenta lê o dataset processado e devolve um resumo com as métricas pedidas:
+informações básicas do dataset, série mensal de casos dos últimos 12 meses e seu
+crescimento mês a mês. O módulo está em desenvolvimento: as demais ferramentas
+planejadas estão indicadas nos comentários ao final.
 """
 
 from typing import Any
@@ -56,6 +57,27 @@ def _add_info_num_casos_dataset(serie, info, sufixo):
     info["std_num_casos_" + sufixo] = round(float(serie.std()), 2)
 
 
+def _num_mensal_casos(df):
+    """Calcula o número mensal de casos dos últimos 12 meses.
+
+    A janela de 365 dias termina na data mais recente de primeiros sintomas
+    (`DT_SIN_PRI`). Os casos são somados por mês, então o primeiro e o último mês podem
+    ser parciais.
+
+    Args:
+        df: DataFrame com as colunas `DT_SIN_PRI` e `NU_NOTIFIC`.
+
+    Returns:
+        Série com o número de casos de cada mês, indexada pelo último dia do mês como
+        texto `AAAA-MM-DD`.
+    """
+    num_casos_12_m = filtrar_dataset_casos(df, "DT_SIN_PRI", 365, "NU_NOTIFIC")
+    num_casos_12_m = num_casos_12_m.resample("ME").sum()
+    num_casos_12_m.index = num_casos_12_m.index.astype("str")
+
+    return num_casos_12_m
+
+
 # tool para pegar informações básicas acerca dos dados
 
 
@@ -98,7 +120,65 @@ def dataframe_info(filepath: str) -> dict[str, Any]:
     return info
 
 
+# tool para num_mensal_casos
+
+
+@tool
+def num_casos_mensal_ultimos_12_m(filepath: str) -> str:
+    """Calcula o número mensal de casos dos últimos 12 meses.
+
+    Usa os dados dos últimos 12 meses (365 dias até a data mais recente de primeiros
+    sintomas, `DT_SIN_PRI`) e soma os casos por mês. O primeiro e o último mês podem ser
+    parciais.
+
+    Args:
+        filepath: Caminho do arquivo parquet com o dataset processado.
+
+    Returns:
+        Texto JSON que mapeia o último dia de cada mês (`AAAA-MM-DD`) ao número de casos
+        do mês.
+    """
+    # carregar dataframe
+    df = _importar_dataset(filepath=filepath)
+
+    # série últimos 12 meses
+    num_casos_12_m = _num_mensal_casos(df)
+
+    # num_casos mensal
+    return num_casos_12_m.to_json()
+
+
 # tool para crescimento_mensal_num_casos
+
+
+@tool
+def crescimento_mensal_ultimos_12_m(filepath: str) -> str:
+    """Calcula o crescimento mês a mês do número de casos dos últimos 12 meses.
+
+    Usa os dados dos últimos 12 meses (365 dias até a data mais recente de primeiros
+    sintomas, `DT_SIN_PRI`). Cada valor é a variação percentual do número de casos do
+    mês em relação ao mês anterior (10.0 significa +10%). O primeiro mês não tem mês
+    anterior e fica de fora.
+    O último mês é parcial, pois termina na data mais recente do dataset, então sua
+    variação tende a ser fortemente negativa sem representar uma queda real.
+
+    Args:
+        filepath: Caminho do arquivo parquet com o dataset processado.
+
+    Returns:
+        Texto JSON que mapeia o último dia de cada mês (`AAAA-MM-DD`) ao crescimento
+        percentual do número de casos em relação ao mês anterior.
+    """
+    # carregar dataframe
+    df = _importar_dataset(filepath=filepath)
+
+    # série últimos 12 meses
+    num_casos_12_m = _num_mensal_casos(df)
+
+    # crescimento mensal
+    crescimento_mensal_ultimos_12_m = num_casos_12_m.pct_change().dropna() * 100
+    return crescimento_mensal_ultimos_12_m.round(2).to_json()
+
 
 # tool estatistica numero de casos
 
