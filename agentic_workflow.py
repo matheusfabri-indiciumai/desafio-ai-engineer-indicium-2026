@@ -1,5 +1,6 @@
 """TODO: docstring"""
 
+from pathlib import Path
 from typing import Annotated, TypedDict
 
 from dotenv import load_dotenv
@@ -11,6 +12,11 @@ from langgraph.prebuilt import ToolNode, tools_condition
 
 from src.agent import system_prompt_agente
 from src.tools import dataframe_info
+from src.utils import build_logger
+
+# definir logging
+
+logger = build_logger(Path(__file__).name)
 
 # tools
 
@@ -47,16 +53,16 @@ def assistente(state: EstadoAgente):
 
 
 # add nós
-builder.add_node("assistant", assistente)
+builder.add_node("assistente", assistente)
 builder.add_node("tools", ToolNode(tools))
 
-# add arestas (START -> (assistant <-> tools) -> end)
-builder.add_edge(START, "assistant")
+# add arestas (START -> (assistente <-> tools) -> end)
+builder.add_edge(START, "assistente")
 builder.add_conditional_edges(
-    "assistant",
+    "assistente",
     tools_condition,
 )
-builder.add_edge("tools", "assistant")
+builder.add_edge("tools", "assistente")
 
 # buildar app
 srag_reporter = builder.compile()
@@ -70,4 +76,4 @@ if __name__ == "__main__":
 
     response = srag_reporter.invoke(query)
     for message in response["messages"]:
-        message.pretty_print()
+        logger.info(f"[{message.type}] {message.text}")

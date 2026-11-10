@@ -117,7 +117,7 @@ Nesta etapa focamos na análise exploratória dos dados e no desenvolvimento do 
 Nesta etapa desenvolvemos o fluxo agêntico. Temos:
 
 - [ ] Criação do pipeline em LangGraph:
-  - [ ] Criação do prompt de início de processamento.
+  - [X] Criação do prompt de início de processamento.
   - [X] Criação dos nós necessários.
   - [X] Criação da chamada LLM e configuração da API da Anthropic.
   - [ ] Criação dos prompts de processamento e chamada de tools.
