@@ -10,7 +10,7 @@ from typing import Any
 import pandas as pd
 from langchain.tools import tool
 
-from utils import filtrar_dataset_casos
+from src.utils import filtrar_dataset_casos
 
 # funções auxiliares
 

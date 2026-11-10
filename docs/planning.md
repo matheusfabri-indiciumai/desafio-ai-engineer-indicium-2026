@@ -118,8 +118,8 @@ Nesta etapa desenvolvemos o fluxo agêntico. Temos:
 
 - [ ] Criação do pipeline em LangGraph:
   - [ ] Criação do prompt de início de processamento.
-  - [ ] Criação dos nós necessários.
-  - [ ] Criação da chamada LLM e configuração da API da Anthropic.
+  - [X] Criação dos nós necessários.
+  - [X] Criação da chamada LLM e configuração da API da Anthropic.
   - [ ] Criação dos prompts de processamento e chamada de tools.
   - [ ] Criação das tools para leitura da base local de dados.
   - [ ] Criação do dict contendo a síntese do conteúdo.
@@ -136,4 +136,5 @@ Finalizamos o planejamento com a documentação e entrega do desafio.
   - [ ] Detalhamento do fluxo agêntico.
   - [ ] Escrever README do projeto.
   - [ ] Detalhar possíveis extensões da PoC para um produto final.
+  - [ ] Renderizar os prompts.
 - [ ] Entrega via plataforma da Indicium AI training.

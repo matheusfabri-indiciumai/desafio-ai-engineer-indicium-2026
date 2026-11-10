@@ -4,68 +4,70 @@ from typing import Annotated, TypedDict
 
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
-from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AnyMessage
 from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode, tools_condition
+
+from src.agent import system_prompt_agente
+from src.tools import dataframe_info
+
+# tools
+
+tools = [dataframe_info]
 
 load_dotenv()
 
 MODEL_ANTHROPIC = "claude-haiku-5-5"
+LOCAL_FILEPATH = "./data/srag_data_2026_clean.parquet"
+PLOT_12_M = "./plots/num_casos_12_meses.png"
+PLOT_30_D = "./plots/num_casos_30_dias.png"
 
 
 # definição estado do agente
 class EstadoAgente(TypedDict):
-    plot_num_casos_30_d: str
-    plot_num_casos_12_m: str
     messages: Annotated[list[AnyMessage], add_messages]
 
 
 # definição do modelo
 llm = ChatAnthropic(model=MODEL_ANTHROPIC)
-# llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
-# tool_node = ToolNode(tools)
+llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
 
 # definição do grafo
 builder = StateGraph(EstadoAgente)
 
 
-# def assistente
+# definição do nós
 def assistente(state: EstadoAgente):
-    sys_msg = SystemMessage(content="Você responde perguntas em PT-BR de matemática nível PhD.")
+    sys_msg = system_prompt_agente(
+        filepath=LOCAL_FILEPATH, plot_num_casos_12_m=PLOT_12_M, plot_num_casos_30_d=PLOT_30_D
+    )
 
-    # TODO: inserir llm com tools
-    return {"messages": [llm.invoke([sys_msg] + state["messages"])]}
+    return {"messages": [llm_with_tools.invoke([sys_msg] + state["messages"])]}
 
 
 # add nós
 builder.add_node("assistant", assistente)
-# builder.add_node("tools", ToolNode(tools))
+builder.add_node("tools", ToolNode(tools))
 
 # add arestas (START -> (assistant <-> tools) -> end)
 builder.add_edge(START, "assistant")
-# builder.add_conditional_edges(
-#     "assistant",
-#     tools_condition,
-# )
-# builder.add_edge("tools", "assistant")
+builder.add_conditional_edges(
+    "assistant",
+    tools_condition,
+)
+builder.add_edge("tools", "assistant")
 
 # buildar app
 srag_reporter = builder.compile()
 
+# plotar grafo para visualização
 srag_reporter.get_graph().draw_mermaid_png(output_file_path="graph_agentic_workflow.png")
 
-# uso do app
-messages = [
-    HumanMessage(content="Me dê um exemplo de uma expressão básica em teoria dependente dos tipos.")
-]
-response = srag_reporter.invoke({"messages": messages})
+# execução do app
+if __name__ == "__main__":
+    query = {"messages": [("user", "Faça o relatório de SRAG.")]}
 
-print(response["messages"][-1].text)
-
-# if __name__ == "__main__":
-#     query = {"messages": [("user", "What is 234 plus 567, and then multiply that result by 3?")]}
-
-#     # Stream the steps of the graph execution
-#     for chunk in app.stream(query, stream_mode="values"):
-#         last_message = chunk["messages"][-1]
-#         last_message.pretty_print()
+    response = srag_reporter.invoke(query)
+    for message in response["messages"]:
+        message.pretty_print()
