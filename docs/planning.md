@@ -125,7 +125,7 @@ Nesta etapa desenvolvemos o fluxo agêntico. Temos:
   - [X] Criação das tools para busca online.
   - [ ] Criação das tools para o preenchimento do template em markdown.
   - [ ] Criação do dict contendo a síntese do conteúdo.
-  - [ ] Criação do template em markdown para preenchimento.
+  - [X] Criação do template em markdown para preenchimento.
 - [ ] Criação de Makefile para a execução de cada etapa e limpeza de arquivos.
 
 ### 3 - Documentação e Entrega
