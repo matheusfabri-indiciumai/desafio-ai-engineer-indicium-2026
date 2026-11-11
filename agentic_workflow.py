@@ -22,8 +22,9 @@ from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
-from src.agent import ResumoAgente, system_prompt_agente
+from src.agent import ResumoBoletim, system_prompt_agente
 from src.tools import (
+    atualizar_summary,
     busca_web,
     coleta_web,
     crescimento_mensal_ultimos_12_m,
@@ -48,6 +49,7 @@ tools = [
     crescimento_mensal_ultimos_12_m,
     taxa_de_vacinacao,
     taxa_periodo,
+    atualizar_summary,
 ]
 
 load_dotenv()
@@ -65,7 +67,7 @@ class EstadoAgente(TypedDict):
     plot_num_casos_12_m: str
     plot_num_casos_30_d: str
     filepath_template: str
-    summary: ResumoAgente
+    summary: ResumoBoletim
     messages: Annotated[list[AnyMessage], add_messages]
 
 

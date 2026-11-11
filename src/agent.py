@@ -20,9 +20,9 @@ def system_prompt_agente():
     agente deve produzir), `<schema_dataset>` (colunas, tipos e valores do dataset),
     `<regras>` (premissas, formato dos valores, limitações dos dados e uso da web) e
     `<passos>` (checklist que o agente deve seguir, com a extração das informações do
-    dataset e da web, montado por `_prompt_passos_agente`). A data de emissão do boletim
-    é a data de hoje, inserida no `<contexto>`. Os caminhos dos arquivos não aparecem no
-    prompt: são injetados do estado do agente nas ferramentas.
+    dataset e da web e a gravação do resumo, montado por `_prompt_passos_agente`). A data
+    de emissão do boletim é a data de hoje, inserida no `<contexto>`. Os caminhos dos
+    arquivos não aparecem no prompt: são injetados do estado do agente nas ferramentas.
 
     Returns:
         Mensagem de sistema com o prompt do agente.
@@ -96,8 +96,8 @@ def _prompt_passos_agente():
     Os passos são um checklist dentro do bloco XML `<passos>`, incluído no prompt de
     sistema por `system_prompt_agente`. Cada passo chama uma ferramenta e indica quais
     valores extrair, já no formato dos campos de `ResumoAgente`. O último passo redige os
-    textos interpretativos. O passo de preencher o resumo no estado do agente será
-    acrescentado quando a ferramenta correspondente existir.
+    textos interpretativos, e o último grava o resumo no estado do agente com a ferramenta
+    `atualizar_summary`.
 
     Returns:
         Texto do bloco `<passos>` com o checklist.
@@ -125,9 +125,12 @@ de cada uma.
 - [ ] 7. Com os valores extraídos, redija o resumo, as interpretações (evolução dos casos, \
 crescimento mensal, taxas, impacto das notícias), a conclusão e as recomendações para a \
 Indicium HealthCare Inc., sempre apoiadas nos números.
+- [ ] 8. Chame `atualizar_summary` uma única vez, com todos os campos do resumo \
+preenchidos com os valores extraídos e os textos redigidos. Não preencha os caminhos dos \
+gráficos: eles são adicionados automaticamente.
 
-Ao concluir todos os passos, apresente os valores extraídos e os textos redigidos, \
-organizados pelos campos do resumo, e encerre o turno.
+Ao receber a confirmação de `atualizar_summary`, encerre o turno sem repetir o conteúdo do \
+resumo.
 </passos>"""
 
 
@@ -135,9 +138,11 @@ organizados pelos campos do resumo, e encerre o turno.
 
 
 class ResumoAgente(BaseModel):
-    """Valores que preenchem os campos `{...}` do template do boletim.
+    """Valores que o agente preenche para os campos `{...}` do template do boletim.
 
-    Há um campo para cada chave de `src/template_report.md`, na ordem em que aparecem.
+    Há um campo para cada chave de `src/template_report.md`, na ordem em que aparecem,
+    exceto os caminhos dos gráficos (`plot_num_casos_30_d` e `plot_num_casos_12_m`), que
+    o agente não preenche: eles vêm do estado e são acrescentados em `ResumoBoletim`.
     Todos são texto, já no formato em que serão inseridos no boletim: datas em
     DD/MM/AAAA, números no padrão brasileiro (separador de milhar com ponto e vírgula
     decimal) e tabelas e listas em markdown.
@@ -180,18 +185,6 @@ class ResumoAgente(BaseModel):
     )
 
     # resultados: número de casos
-    plot_num_casos_30_d: str = Field(
-        description=(
-            "Caminho da imagem do gráfico do número diário de casos dos últimos 30 dias. "
-            "Vem do estado do agente (`plot_num_casos_30_d`), não deve ser inventado."
-        )
-    )
-    plot_num_casos_12_m: str = Field(
-        description=(
-            "Caminho da imagem do gráfico do número diário de casos dos últimos 12 meses. "
-            "Vem do estado do agente (`plot_num_casos_12_m`), não deve ser inventado."
-        )
-    )
     interpretacao_evolucao_casos: str = Field(
         description=(
             "Interpretação da evolução diária dos casos nos gráficos de 30 dias e de 12 meses: "
@@ -317,4 +310,20 @@ class ResumoAgente(BaseModel):
             "Lista em markdown das fontes (título e URL) das informações que não vêm do "
             "dataset, como as notícias."
         )
+    )
+
+
+class ResumoBoletim(ResumoAgente):
+    """Resumo completo do boletim: os campos do agente mais os caminhos dos gráficos.
+
+    Há um campo para cada chave de `src/template_report.md`. Os caminhos dos gráficos
+    vêm do estado do agente e são acrescentados pela ferramenta que grava o resumo,
+    sem passar pelo modelo.
+    """
+
+    plot_num_casos_30_d: str = Field(
+        description="Caminho da imagem do gráfico do número diário de casos dos últimos 30 dias."
+    )
+    plot_num_casos_12_m: str = Field(
+        description="Caminho da imagem do gráfico do número diário de casos dos últimos 12 meses."
     )

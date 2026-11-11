@@ -21,8 +21,12 @@ import pandas as pd
 import pyarrow.parquet as pq
 from anthropic.types import WebFetchTool20250910Param, WebSearchTool20260209Param
 from langchain.tools import tool
+from langchain_core.messages import ToolMessage
+from langchain_core.tools import InjectedToolCallId
 from langgraph.prebuilt import InjectedState
+from langgraph.types import Command
 
+from src.agent import ResumoAgente, ResumoBoletim
 from src.utils import filtrar_dataset_casos
 
 # funções auxiliares
@@ -378,6 +382,51 @@ def taxa_periodo(
     )
 
     return df_filtrado.to_json(orient="index")
+
+
+# tool para atualizar ResumoAgente
+
+
+@tool
+def atualizar_summary(
+    summary: ResumoAgente,
+    plot_num_casos_30_d: Annotated[str, InjectedState("plot_num_casos_30_d")],
+    plot_num_casos_12_m: Annotated[str, InjectedState("plot_num_casos_12_m")],
+    tool_call_id: Annotated[str, InjectedToolCallId],
+) -> Command:
+    """Grava no estado do agente o resumo com os valores que preenchem o boletim.
+
+    Chame esta ferramenta uma única vez, ao concluir todos os passos de extração e de
+    redação, com todos os campos do resumo preenchidos. Cada campo deve estar no formato
+    descrito no seu schema (datas em DD/MM/AAAA, números no padrão brasileiro, taxas com
+    o símbolo %). Uma nova chamada substitui o resumo anterior por completo.
+
+    Args:
+        summary: Resumo com todos os campos do boletim preenchidos pelo agente.
+        plot_num_casos_30_d: Caminho do gráfico dos últimos 30 dias. É injetado do estado
+            (`plot_num_casos_30_d`), e o modelo não o informa.
+        plot_num_casos_12_m: Caminho do gráfico dos últimos 12 meses. É injetado do estado
+            (`plot_num_casos_12_m`), e o modelo não o informa.
+        tool_call_id: Identificador da chamada. É injetado pelo `ToolNode`, e o modelo
+            não o informa.
+
+    Returns:
+        Comando que atualiza a chave `summary` do estado com um `ResumoBoletim` (o resumo
+        do agente mais os caminhos dos gráficos) e responde com uma confirmação curta,
+        sem repetir o conteúdo do resumo.
+    """
+    resumo_boletim = ResumoBoletim(
+        **summary.model_dump(),
+        plot_num_casos_30_d=plot_num_casos_30_d,
+        plot_num_casos_12_m=plot_num_casos_12_m,
+    )
+
+    return Command(
+        update={
+            "summary": resumo_boletim,
+            "messages": [ToolMessage(content="Resumo atualizado.", tool_call_id=tool_call_id)],
+        }
+    )
 
 
 # tool leitura de boletim
