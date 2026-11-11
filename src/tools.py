@@ -1,10 +1,11 @@
 """Ferramentas do agente para consultar os dados de SRAG e a web.
 
 As ferramentas locais leem o dataset processado e devolvem um resumo com as métricas
-pedidas: informações básicas do dataset, série mensal de casos dos últimos 12 meses e
-seu crescimento mês a mês, situação de vacinação e contagem de casos por categoria em um
-período (base das taxas de mortalidade e de internação em UTI). O caminho do dataset é
-injetado do estado do agente.
+pedidas: informações gerais do dataset e metadados do arquivo, estatísticas do número
+diário de casos, série mensal de casos dos últimos 12 meses e seu crescimento mês a mês,
+situação de vacinação e contagem de casos por categoria em um período (base das taxas de
+mortalidade e de internação em UTI). O caminho do dataset é injetado do estado do
+agente.
 
 O módulo também define as ferramentas de busca (`busca_web`) e de coleta (`coleta_web`)
 na web do Claude, restritas a domínios permitidos. Elas rodam nos servidores da
@@ -17,6 +18,7 @@ comentários ao final.
 from typing import Annotated, Any, Literal
 
 import pandas as pd
+import pyarrow.parquet as pq
 from anthropic.types import WebFetchTool20250910Param, WebSearchTool20260209Param
 from langchain.tools import tool
 from langgraph.prebuilt import InjectedState
@@ -42,8 +44,8 @@ def _add_info_num_casos_dataset(serie, info, sufixo):
     """Acrescenta ao dicionário `info` as estatísticas de uma série de número de casos.
 
     Adiciona, com o `sufixo` no final de cada chave, o máximo e o mínimo (com a data em
-    que ocorreram), a média e o desvio padrão da série. O dicionário é modificado no
-    lugar e nada é retornado. Os valores são tipos nativos do Python, serializáveis em
+    que ocorreram), o total, a média e o desvio padrão da série. O dicionário é
+    modificado no lugar e nada é retornado. Os valores são tipos nativos do Python, serializáveis em
     JSON e prontos para o LLM: contagens como `int`, média e desvio padrão como `float`
     com 2 casas decimais e datas como texto `AAAA-MM-DD`.
 
@@ -51,8 +53,8 @@ def _add_info_num_casos_dataset(serie, info, sufixo):
         serie: Série indexada por data com o número de casos de cada dia.
         info: Dicionário que recebe as estatísticas. As chaves adicionadas são
             `max_num_casos_<sufixo>` e `min_num_casos_<sufixo>`, cada uma com
-            `{"quantidade": ..., "data": ...}`, além de `mean_num_casos_<sufixo>` e
-            `std_num_casos_<sufixo>`.
+            `{"quantidade": ..., "data": ...}`, além de `total_num_casos_<sufixo>`,
+            `mean_num_casos_<sufixo>` e `std_num_casos_<sufixo>`.
         sufixo: Identificador da janela de tempo, por exemplo `"30_d"` ou `"12_m"`.
     """
     info["max_num_casos_" + sufixo] = {
@@ -63,6 +65,7 @@ def _add_info_num_casos_dataset(serie, info, sufixo):
         "quantidade": int(serie.min()),
         "data": serie.idxmin().strftime("%Y-%m-%d"),
     }
+    info["total_num_casos_" + sufixo] = int(serie.sum())
     info["mean_num_casos_" + sufixo] = round(float(serie.mean()), 2)
     info["std_num_casos_" + sufixo] = round(float(serie.std()), 2)
 
@@ -117,15 +120,34 @@ def _filtrar_dataframe_coluna(
     return df_reduced.groupby(col_target).count()[["NU_NOTIFIC"]]
 
 
-# tool para pegar informações básicas acerca dos dados
+def _add_info_metadata(info, filepath):
+    """Acrescenta ao dicionário `info` os metadados gravados no arquivo parquet.
+
+    Lê o metadado do schema do arquivo, gravado pelo `data_fetching_processing.py`, e
+    copia para `info` as chaves `data_criacao`, `data_extracao` e `pct_dados_descartados`
+    que existirem. Arquivos sem esses metadados não geram erro: as chaves ausentes
+    simplesmente não são adicionadas. O dicionário é modificado no lugar e nada é
+    retornado.
+
+    Args:
+        info: Dicionário que recebe os metadados, como texto.
+        filepath: Caminho do arquivo parquet de onde os metadados são lidos.
+    """
+    # ler o schema e decodificar o metadado (chaves e valores vêm em bytes)
+    metadata = pq.read_schema(filepath).metadata or {}
+    metadata_decoded = {k.decode("utf-8"): v.decode("utf-8") for k, v in metadata.items()}
+
+    for chave in ("data_criacao", "data_extracao", "pct_dados_descartados"):
+        if chave in metadata_decoded:
+            info[chave] = metadata_decoded[chave]
+
+
+# tool para pegar informações básicas acerca do dataset
 
 
 @tool
 def dataframe_info(filepath: Annotated[str, InjectedState("filepath_dataset")]) -> dict[str, Any]:
-    """Resume as informações básicas do dataset e o número de casos por janela de tempo.
-
-    As janelas de 30 dias e 12 meses (365 dias) terminam na data mais recente de
-    primeiros sintomas (`DT_SIN_PRI`), tratada como "hoje".
+    """Resume as informações gerais do dataset e os metadados do arquivo.
 
     Args:
         filepath: Caminho do arquivo parquet com o dataset processado. É injetado do estado
@@ -134,11 +156,13 @@ def dataframe_info(filepath: Annotated[str, InjectedState("filepath_dataset")]) 
     Returns:
         Dicionário serializável em JSON, com tipos nativos do Python (datas como texto
         `AAAA-MM-DD`), contendo:
-            - `shape`: dimensões do dataset;
+            - `shape`: dimensões do dataset (linhas e colunas);
             - `data_maxima` e `data_minima`: datas extremas de `DT_SIN_PRI`;
-            - `max_num_casos_*`, `min_num_casos_*`, `mean_num_casos_*` e
-              `std_num_casos_*`: estatísticas do número diário de casos, com sufixo
-              `12_m` (últimos 12 meses) e `30_d` (últimos 30 dias).
+            - `data_criacao`: data em que o arquivo processado foi gerado;
+            - `data_extracao`: data de extração dos dados do Open DATASUS;
+            - `pct_dados_descartados`: porcentagem de registros removidos por valores
+              nulos ou ignorados, como texto com 2 casas decimais.
+        As três últimas chaves só aparecem quando o arquivo tem esses metadados.
     """
     # carregar dataframe
     df = _importar_dataset(filepath=filepath)
@@ -149,6 +173,44 @@ def dataframe_info(filepath: Annotated[str, InjectedState("filepath_dataset")]) 
     info["shape"] = df.shape
     info["data_maxima"] = df["DT_SIN_PRI"].max().strftime("%Y-%m-%d")
     info["data_minima"] = df["DT_SIN_PRI"].min().strftime("%Y-%m-%d")
+
+    _add_info_metadata(info, filepath)
+
+    return info
+
+
+# tool para pegar estatísticas básicas acerca do número de casos
+
+
+@tool
+def estatisticas_num_casos(
+    filepath: Annotated[str, InjectedState("filepath_dataset")],
+) -> dict[str, Any]:
+    """Calcula as estatísticas do número diário de casos nos últimos 30 dias e 12 meses.
+
+    As janelas de 30 dias e 12 meses (365 dias) terminam na data mais recente de
+    primeiros sintomas (`DT_SIN_PRI`). Os últimos dias do dataset estão incompletos por
+    atraso de notificação, então o mínimo costuma cair nesse período.
+
+    Args:
+        filepath: Caminho do arquivo parquet com o dataset processado. É injetado do estado
+            (`filepath_dataset`), e o modelo não o informa.
+
+    Returns:
+        Dicionário serializável em JSON, com tipos nativos do Python (datas como texto
+        `AAAA-MM-DD`), com as chaves abaixo para cada janela, identificada pelo sufixo
+        `30_d` (últimos 30 dias) ou `12_m` (últimos 12 meses):
+            - `max_num_casos_<sufixo>` e `min_num_casos_<sufixo>`: dia com mais e com
+              menos casos, como `{"quantidade": ..., "data": ...}`;
+            - `total_num_casos_<sufixo>`: total de casos da janela;
+            - `mean_num_casos_<sufixo>` e `std_num_casos_<sufixo>`: média e desvio padrão
+              do número diário de casos, com 2 casas decimais.
+    """
+    # carregar dataframe
+    df = _importar_dataset(filepath=filepath)
+
+    # informações do dataset
+    info = {}
 
     num_casos_30_d = filtrar_dataset_casos(df, "DT_SIN_PRI", 30, "NU_NOTIFIC")
     num_casos_12_m = filtrar_dataset_casos(df, "DT_SIN_PRI", 365, "NU_NOTIFIC")

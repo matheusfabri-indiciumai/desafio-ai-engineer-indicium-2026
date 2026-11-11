@@ -1,10 +1,12 @@
 """Definições do agente que gera o relatório de SRAG.
 
 Reúne a construção do prompt de sistema do agente, com o contexto, o objetivo, a
-descrição do dataset processado, as regras e os passos a seguir.
+descrição do dataset processado, as regras e os passos a seguir, e o esquema do resumo
+(`ResumoAgente`) com os valores que preenchem o template do boletim.
 """
 
 from langchain_core.messages import SystemMessage
+from pydantic import BaseModel, Field
 
 # prompts
 
@@ -109,3 +111,192 @@ usando apenas as URLs retornadas pela busca, e extrair as informações pertinen
 
 Ao concluir todos os passos do checklist, encerre o turno.
 </passos>"""
+
+
+# schemas
+
+
+class ResumoAgente(BaseModel):
+    """Valores que preenchem os campos `{...}` do template do boletim.
+
+    Há um campo para cada chave de `src/template_report.md`, na ordem em que aparecem.
+    Todos são texto, já no formato em que serão inseridos no boletim: datas em
+    DD/MM/AAAA, números no padrão brasileiro (separador de milhar com ponto e vírgula
+    decimal) e tabelas e listas em markdown.
+    """
+
+    # cabeçalho e metadados
+    data_inicio: str = Field(
+        description=(
+            "Data inicial do período analisado, no formato DD/MM/AAAA: a mais recente entre "
+            "o início da janela de 12 meses e a data mais antiga de início dos sintomas do "
+            "dataset."
+        )
+    )
+    data_fim: str = Field(
+        description=(
+            "Data final do período analisado, no formato DD/MM/AAAA: a data mais recente de "
+            "início dos sintomas do dataset."
+        )
+    )
+    data_relatorio: str = Field(description="Data de emissão do boletim, no formato DD/MM/AAAA.")
+    data_extracao: str = Field(
+        description=(
+            "Data de extração dos dados do Open DATASUS, no formato DD/MM/AAAA. Consta no "
+            "nome do arquivo baixado (por exemplo, INFLUD26-19-10-2026 indica 19/10/2026)."
+        )
+    )
+    pct_dados_descartados: str = Field(
+        description=(
+            "Porcentagem de registros removidos por terem evolução, vacinação ou internação "
+            "em UTI nulos ou ignorados, com duas casas decimais e o símbolo %. Ex.: 13,55%."
+        )
+    )
+
+    # resumo
+    resumo: str = Field(
+        description=(
+            "Resumo do boletim em um parágrafo curto: situação do número de casos, principais "
+            "taxas e o contexto trazido pelas notícias."
+        )
+    )
+
+    # resultados: número de casos
+    plot_num_casos_30_d: str = Field(
+        description=(
+            "Caminho da imagem do gráfico do número diário de casos dos últimos 30 dias. "
+            "Vem do estado do agente (`plot_num_casos_30_d`), não deve ser inventado."
+        )
+    )
+    plot_num_casos_12_m: str = Field(
+        description=(
+            "Caminho da imagem do gráfico do número diário de casos dos últimos 12 meses. "
+            "Vem do estado do agente (`plot_num_casos_12_m`), não deve ser inventado."
+        )
+    )
+    interpretacao_evolucao_casos: str = Field(
+        description=(
+            "Interpretação da evolução diária dos casos nos gráficos de 30 dias e de 12 meses: "
+            "tendência, picos e vales, lembrando que os últimos dias do dataset estão "
+            "incompletos por atraso de notificação."
+        )
+    )
+    total_casos_30_d: str = Field(
+        description="Total de casos nos últimos 30 dias, inteiro com separador de milhar. Ex.: 5.054."
+    )
+    total_casos_12_m: str = Field(
+        description="Total de casos nos últimos 12 meses, inteiro com separador de milhar."
+    )
+    media_casos_30_d: str = Field(
+        description="Média diária de casos nos últimos 30 dias, com duas casas decimais. Ex.: 168,47."
+    )
+    media_casos_12_m: str = Field(
+        description="Média diária de casos nos últimos 12 meses, com duas casas decimais."
+    )
+    desvio_casos_30_d: str = Field(
+        description="Desvio padrão do número diário de casos nos últimos 30 dias, com duas casas decimais."
+    )
+    desvio_casos_12_m: str = Field(
+        description="Desvio padrão do número diário de casos nos últimos 12 meses, com duas casas decimais."
+    )
+    max_casos_30_d: str = Field(
+        description=(
+            "Dia com mais casos nos últimos 30 dias, no formato `quantidade (DD/MM/AAAA)`. "
+            "Ex.: 388 (20/09/2026)."
+        )
+    )
+    max_casos_12_m: str = Field(
+        description="Dia com mais casos nos últimos 12 meses, no formato `quantidade (DD/MM/AAAA)`."
+    )
+    min_casos_30_d: str = Field(
+        description="Dia com menos casos nos últimos 30 dias, no formato `quantidade (DD/MM/AAAA)`."
+    )
+    min_casos_12_m: str = Field(
+        description="Dia com menos casos nos últimos 12 meses, no formato `quantidade (DD/MM/AAAA)`."
+    )
+    tabela_crescimento_mensal: str = Field(
+        description=(
+            "Tabela em markdown com uma linha por mês e as colunas `Mês`, `Casos` e "
+            "`Crescimento (%)`, com a variação em relação ao mês anterior. O primeiro mês não "
+            "tem mês anterior e fica sem crescimento."
+        )
+    )
+    interpretacao_crescimento_mensal: str = Field(
+        description=(
+            "Interpretação do crescimento mês a mês: períodos de alta e de queda. O último mês "
+            "é parcial, então sua queda não deve ser apresentada como redução real de casos."
+        )
+    )
+
+    # resultados: demais métricas
+    taxa_mortalidade_30_d: str = Field(
+        description=(
+            "Taxa de mortalidade nos últimos 30 dias (óbitos entre os casos com desfecho), "
+            "com duas casas decimais e o símbolo %. Ex.: 6,87%."
+        )
+    )
+    taxa_mortalidade_12_m: str = Field(
+        description="Taxa de mortalidade nos últimos 12 meses, com duas casas decimais e o símbolo %."
+    )
+    taxa_uti_30_d: str = Field(
+        description=(
+            "Taxa de ocupação de UTI nos últimos 30 dias (casos internados em UTI entre o total "
+            "de casos), com duas casas decimais e o símbolo %. Ex.: 26,14%."
+        )
+    )
+    taxa_uti_12_m: str = Field(
+        description="Taxa de ocupação de UTI nos últimos 12 meses, com duas casas decimais e o símbolo %."
+    )
+    casos_vacinados: str = Field(
+        description="Número de casos vacinados contra COVID-19, inteiro com separador de milhar."
+    )
+    casos_nao_vacinados: str = Field(
+        description="Número de casos não vacinados contra COVID-19, inteiro com separador de milhar."
+    )
+    taxa_vacinados: str = Field(
+        description=(
+            "Proporção de vacinados entre os casos de SRAG, com duas casas decimais e o "
+            "símbolo %. Ex.: 38,85%. Não é a cobertura vacinal da população."
+        )
+    )
+    taxa_nao_vacinados: str = Field(
+        description="Proporção de não vacinados entre os casos de SRAG, com duas casas decimais e o símbolo %."
+    )
+    interpretacao_metricas: str = Field(
+        description=(
+            "Interpretação conjunta das taxas de mortalidade, de ocupação de UTI e de "
+            "vacinação, comparando as janelas de 30 dias e de 12 meses."
+        )
+    )
+
+    # notícias
+    lista_noticias: str = Field(
+        description=(
+            "Lista em markdown das notícias recentes sobre SRAG, cada item com título, fonte, "
+            "URL e uma frase de resumo. Usar só notícias dos domínios permitidos; se nada "
+            "relevante for encontrado, dizer isso."
+        )
+    )
+    impacto_noticias: str = Field(
+        description=(
+            "Análise do impacto das notícias e de sua relação com os dados apresentados. As "
+            "métricas vêm sempre do dataset, e as notícias só as contextualizam."
+        )
+    )
+
+    # conclusão e referências
+    conclusao: str = Field(
+        description="Conclusão do boletim, retomando os principais achados sobre casos, taxas e contexto."
+    )
+    recomendacoes: str = Field(
+        description=(
+            "Lista numerada em markdown de recomendações para a Indicium HealthCare Inc., cada "
+            "uma ligada a um achado dos dados."
+        )
+    )
+    fontes_informacoes: str = Field(
+        description=(
+            "Lista em markdown das fontes (título e URL) das informações que não vêm do "
+            "dataset, como as notícias."
+        )
+    )

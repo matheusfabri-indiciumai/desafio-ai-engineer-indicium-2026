@@ -2,7 +2,8 @@
 
 Lê da URL passada como argumento só as colunas necessárias, rotula `EVOLUCAO`,
 `VACINA_COV` e `UTI`, descarta os registros com valores ignorados ou nulos e salva o
-dataset limpo em parquet. Também grava em `plots/` os gráficos do número diário de casos
+dataset limpo em parquet, com os metadados `data_criacao`, `data_extracao` e
+`pct_dados_descartados`. Também grava em `plots/` os gráficos do número diário de casos
 dos últimos 30 dias e dos últimos 12 meses (365 dias). O andamento é registrado em um
 arquivo de log.
 
@@ -10,9 +11,13 @@ Uso: `uv run data_fetching_processing.py <url> [-f <filepath>]`.
 """
 
 import argparse
+import datetime
+import re
 from pathlib import Path
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 from src.utils import build_logger, filtrar_dataset_casos, plot_num_casos
 
@@ -68,10 +73,32 @@ pct_dados_descartados = (len(df) - len(df_cleaned)) * 100 / len(df)
 
 logger.info(f"porcentagem de dados descartados: {pct_dados_descartados:.3f}")
 
+# criar metadado personalizado (o metadado do parquet só aceita texto)
+
+table = pa.Table.from_pandas(df_cleaned, preserve_index=False)
+
+custom_metadata = {
+    "data_criacao": datetime.date.today().isoformat(),
+    "pct_dados_descartados": f"{pct_dados_descartados:.2f}",
+}
+
+# data de extração do Open DATASUS, presente no nome do arquivo (INFLUD26-19-10-2026.parquet)
+match_extracao = re.search(r"-(\d{2})-(\d{2})-(\d{4})\.parquet", URL_DOWNLOAD)
+if match_extracao:
+    dia, mes, ano = match_extracao.groups()
+    custom_metadata["data_extracao"] = f"{ano}-{mes}-{dia}"
+else:
+    logger.warning("data de extração não encontrada no nome do arquivo")
+
+existing_metadata = table.schema.metadata or {}
+combined_metadata = {**existing_metadata, **custom_metadata}
+
+table = table.replace_schema_metadata(combined_metadata)
+
 # salvar dataset na forma final
 try:
     Path(FILEPATH).parent.mkdir(parents=True, exist_ok=True)
-    df_cleaned.to_parquet(FILEPATH, index=False)
+    pq.write_table(table, FILEPATH)
 except Exception:
     logger.exception("falha ao salvar o dataset")
     raise

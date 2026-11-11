@@ -22,7 +22,7 @@ from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
-from src.agent import system_prompt_agente
+from src.agent import ResumoAgente, system_prompt_agente
 from src.tools import (
     busca_web,
     coleta_web,
@@ -51,9 +51,10 @@ tools = [
 load_dotenv()
 
 MODEL_ANTHROPIC = "claude-haiku-5-5"
-LOCAL_FILEPATH = "./data/srag_data_2026_clean.parquet"
+FILEPATH_DATASET = "./data/srag_data_2026_clean.parquet"
 PLOT_12_M = "./plots/num_casos_12_meses.png"
 PLOT_30_D = "./plots/num_casos_30_dias.png"
+FILEPATH_TEMPLATE = "./src/template_report.md"
 
 
 # definição estado do agente
@@ -61,6 +62,8 @@ class EstadoAgente(TypedDict):
     filepath_dataset: str
     plot_num_casos_12_m: str
     plot_num_casos_30_d: str
+    filepath_template: str
+    summary: ResumoAgente
     messages: Annotated[list[AnyMessage], add_messages]
 
 
@@ -101,9 +104,10 @@ srag_reporter.get_graph().draw_mermaid_png(output_file_path="graph_agentic_workf
 if __name__ == "__main__":
     query = {
         "messages": [("user", "Faça o relatório de SRAG.")],
-        "filepath_dataset": LOCAL_FILEPATH,
+        "filepath_dataset": FILEPATH_DATASET,
         "plot_num_casos_12_m": PLOT_12_M,
         "plot_num_casos_30_d": PLOT_30_D,
+        "filepath_template": FILEPATH_TEMPLATE,
     }
 
     response = srag_reporter.invoke(query)
