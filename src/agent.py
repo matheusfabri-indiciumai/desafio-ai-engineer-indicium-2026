@@ -140,7 +140,7 @@ resumo.
 class ResumoAgente(BaseModel):
     """Valores que o agente preenche para os campos `{...}` do template do boletim.
 
-    Há um campo para cada chave de `src/template_report.md`, na ordem em que aparecem,
+    Há um campo para cada chave de `src/template_boletim.md`, na ordem em que aparecem,
     exceto os caminhos dos gráficos (`plot_num_casos_30_d` e `plot_num_casos_12_m`), que
     o agente não preenche: eles vêm do estado e são acrescentados em `ResumoBoletim`.
     Todos são texto, já no formato em que serão inseridos no boletim: datas em
@@ -316,7 +316,7 @@ class ResumoAgente(BaseModel):
 class ResumoBoletim(ResumoAgente):
     """Resumo completo do boletim: os campos do agente mais os caminhos dos gráficos.
 
-    Há um campo para cada chave de `src/template_report.md`. Os caminhos dos gráficos
+    Há um campo para cada chave de `src/template_boletim.md`. Os caminhos dos gráficos
     vêm do estado do agente e são acrescentados pela ferramenta que grava o resumo,
     sem passar pelo modelo.
     """

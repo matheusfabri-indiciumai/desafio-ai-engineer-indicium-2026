@@ -1,18 +1,20 @@
-"""Ferramentas do agente para consultar os dados de SRAG e a web.
+"""Ferramentas do agente para consultar os dados de SRAG e a web e gravar o resumo.
 
 As ferramentas locais leem o dataset processado e devolvem um resumo com as métricas
-pedidas: informações gerais do dataset e metadados do arquivo, estatísticas do número
-diário de casos, série mensal de casos dos últimos 12 meses e seu crescimento mês a mês,
-situação de vacinação e contagem de casos por categoria em um período (base das taxas de
-mortalidade e de internação em UTI). O caminho do dataset é injetado do estado do
-agente.
+pedidas: informações gerais do dataset e metadados do arquivo (`dataframe_info`),
+estatísticas do número diário de casos (`estatisticas_num_casos`), série mensal de casos
+dos últimos 12 meses e seu crescimento mês a mês (`num_casos_mensal_ultimos_12_m` e
+`crescimento_mensal_ultimos_12_m`), situação de vacinação (`taxa_de_vacinacao`) e
+contagem de casos por categoria em um período, base das taxas de mortalidade e de
+internação em UTI (`taxa_periodo`). O caminho do dataset é injetado do estado do agente.
+
+A ferramenta `atualizar_summary` grava no estado do agente o resumo com os valores que
+preenchem o template do boletim (`ResumoBoletim`). Os caminhos dos gráficos são
+injetados do estado e acrescentados ao resumo, sem passar pelo modelo.
 
 O módulo também define as ferramentas de busca (`busca_web`) e de coleta (`coleta_web`)
 na web do Claude, restritas a domínios permitidos. Elas rodam nos servidores da
 Anthropic, por isso são ligadas só ao modelo e não ao `ToolNode`.
-
-O módulo está em desenvolvimento: as demais ferramentas planejadas estão indicadas nos
-comentários ao final.
 """
 
 from typing import Annotated, Any, Literal
@@ -49,9 +51,9 @@ def _add_info_num_casos_dataset(serie, info, sufixo):
 
     Adiciona, com o `sufixo` no final de cada chave, o máximo e o mínimo (com a data em
     que ocorreram), o total, a média e o desvio padrão da série. O dicionário é
-    modificado no lugar e nada é retornado. Os valores são tipos nativos do Python, serializáveis em
-    JSON e prontos para o LLM: contagens como `int`, média e desvio padrão como `float`
-    com 2 casas decimais e datas como texto `AAAA-MM-DD`.
+    modificado no lugar e nada é retornado. Os valores são tipos nativos do Python,
+    serializáveis em JSON e prontos para o LLM: contagens como `int`, média e desvio
+    padrão como `float` com 2 casas decimais e datas como texto `AAAA-MM-DD`.
 
     Args:
         serie: Série indexada por data com o número de casos de cada dia.
@@ -427,8 +429,3 @@ def atualizar_summary(
             "messages": [ToolMessage(content="Resumo atualizado.", tool_call_id=tool_call_id)],
         }
     )
-
-
-# tool leitura de boletim
-
-# tool salvamento de boletim
