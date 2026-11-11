@@ -39,11 +39,11 @@ Os [dados](https://opendatasus.saude.gov.br/dataset/srag-2021-a-2024), o [dicion
 
 ## Solução Proposta para a PoC
 
-Aqui faremos um resumo da arquitetura proposta, a stack necessária para executá-la e o template básico de relatório final.
+Aqui faremos um resumo da arquitetura proposta, a stack necessária para executá-la e o template básico de boletim epidemiológico final.
 
 ### Arquitetura
 
-Nós propomos uma solução totalmente executada localmente via chamadas de API a um modelo de IA comercial; contudo, note que o modelo em si não é o ponto central, pois construiremos uma arquitetura local que permite a troca de modelo se necessário. Aqui dividimos a solução em duas partes: primeiro o download, a limpeza e o processamento dos dados e, então, o uso de um modelo de IA para ler os dados e escrever um relatório com gráficos que sustentem a análise.
+Nós propomos uma solução totalmente executada localmente via chamadas de API a um modelo de IA comercial; contudo, note que o modelo em si não é o ponto central, pois construiremos uma arquitetura local que permite a troca de modelo se necessário. Aqui dividimos a solução em duas partes: primeiro o download, a limpeza e o processamento dos dados e, então, o uso de um modelo de IA para ler os dados e escrever um boletim epidemiológico com gráficos que sustentem a análise.
 
 Para a primeira parte:
 1. Download dos arquivos da base de dados do Open DATASUS.
@@ -57,11 +57,11 @@ Já para a segunda parte faremos um pipeline agêntico no LangGraph com:
 1. Um prompt ativa o modelo passando uma série de informações acerca dos schemas dos dados e da tarefa a ser realizada.
 2. O agente usa as tools locais para ler os dados e coleta as informações salvando-as em memória.
 3. Estas informações são sintetizadas em um `dict` pelo agente.
-4. Com este dicionário preenchemos então uma cópia do template, publicando assim o relatório para o usuário final.
+4. Com este dicionário preenchemos então uma cópia do template, publicando assim o boletim epidemiológico para o usuário final.
 
 Algumas informações acerca da arquitetura escolhida:
 - A LLM é usada para buscar e sintetizar informações na base de dados local, ela não busca nem limpa os dados do Open DATASUS. O motivo de tal escolha é restringir o papel da LLM a tarefas que exijam um processo decisório ou uma análise semântica dos dados, com os passos determinísticos sendo executados no download e na limpeza dos dados via scripts em Python.
-- O formato do relatório de saída é um arquivo Markdown com um template fixo salvo no repositório.
+- O formato do boletim epidemiológico de saída é um arquivo Markdown com um template fixo salvo no repositório.
 - Os gráficos são gerados por meio de um script Python de maneira determinística, garantindo assim a consistência. Contudo, em fases mais avançadas poderíamos fornecer tools ao agente para criar estes gráficos.
 
 Abaixo temos as arquiteturas da primeira e da segunda parte da solução proposta. Para a primeira parte:
@@ -81,7 +81,7 @@ flowchart LR
     B <--> T[Tools dos agentes para buscar na base local]
     E[Base de dados local] --> T
     B --> C[Síntese de informações]
-    C --> R(Escrita do Relatório Final)
+    C --> R(Escrita do Boletim Epidemiológico Final)
 ```
 
 ### Stack Técnica
@@ -92,7 +92,7 @@ A stack proposta é:
 | --- | --- | --- | --- |
 | Python | 3.11 | Linguagem base da solução | Linguagem de uso amplo na indústria e em soluções de IA, facilitando assim a manutenção do produto |
 | LangGraph | 1.2.18 | Framework usado para definir os agentes, tools e chamadas da LLM | Solução open source e amplamente utilizada na indústria, contém ferramentas robustas para construirmos fluxos agênticos |
-| Matplotlib | 3.11.2 | Geração dos gráficos do relatório | Ferramenta padrão para a geração de gráficos em Python |
+| Matplotlib | 3.11.2 | Geração dos gráficos do boletim epidemiológico | Ferramenta padrão para a geração de gráficos em Python |
 | MLflow | 3.17.2 | Monitoramento da solução | Utilizaremos para monitorar as chamadas LLM feitas ao modelo e para um monitoramento geral da solução |
 | Pandas | 3.1.0 | Análise estatística | Ferramenta principal usada para a limpeza e transformação dos dados brutos |
 | Claude Haiku | 5.5 | LLM | Modelo de IA que fará o processamento das requisições; em um primeiro momento, o Haiku é suficiente para uma PoC, com modelos mais robustos reservados para uma versão em produção |

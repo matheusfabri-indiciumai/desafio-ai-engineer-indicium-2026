@@ -1,9 +1,11 @@
-"""Definições do agente que gera o relatório de SRAG.
+"""Definições do agente que gera o boletim epidemiológico de SRAG.
 
 Reúne a construção do prompt de sistema do agente, com o contexto, o objetivo, a
 descrição do dataset processado, as regras e os passos a seguir, e o esquema do resumo
 (`ResumoAgente`) com os valores que preenchem o template do boletim.
 """
+
+import datetime
 
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field
@@ -12,14 +14,15 @@ from pydantic import BaseModel, Field
 
 
 def system_prompt_agente():
-    """Monta o prompt de sistema do agente que cria o relatório de SRAG.
+    """Monta o prompt de sistema do agente que cria o boletim epidemiológico de SRAG.
 
     O prompt é dividido em blocos XML: `<contexto>` (o que é SRAG), `<objetivo>` (o que o
     agente deve produzir), `<schema_dataset>` (colunas, tipos e valores do dataset),
-    `<regras>` (premissas, limitações dos dados e uso da web) e `<passos>` (checklist
-    que o agente deve seguir, com as métricas do dataset e a busca de notícias, montado
-    por `_prompt_passos_agente`). Os caminhos dos arquivos não aparecem no prompt: são
-    injetados do estado do agente nas ferramentas.
+    `<regras>` (premissas, formato dos valores, limitações dos dados e uso da web) e
+    `<passos>` (checklist que o agente deve seguir, com a extração das informações do
+    dataset e da web, montado por `_prompt_passos_agente`). A data de emissão do boletim
+    é a data de hoje, inserida no `<contexto>`. Os caminhos dos arquivos não aparecem no
+    prompt: são injetados do estado do agente nas ferramentas.
 
     Returns:
         Mensagem de sistema com o prompt do agente.
@@ -27,6 +30,7 @@ def system_prompt_agente():
     prompt = f"""Você é um analista de dados de saúde pública. Responda sempre em PT-BR.
 
 <contexto>
+A data de hoje (data de emissão do boletim) é {datetime.date.today():%d/%m/%Y}.
 SRAG é a Síndrome Respiratória Aguda Grave: um quadro de síndrome gripal (febre, tosse, \
 dor de garganta, entre outros sintomas) acompanhado de dispneia ou desconforto \
 respiratório, saturação de O2 abaixo de 95% ou cianose, que leva à hospitalização ou ao \
@@ -36,15 +40,17 @@ respiratório, saturação de O2 abaixo de 95% ou cianose, que leva à hospitali
 </contexto>
 
 <objetivo>
-Criar um relatório de SRAG a partir do dataset processado, para apoiar a leitura da \
-situação epidemiológica. O relatório deve apresentar e interpretar as métricas:
-- taxa de aumento de casos;
-- taxa de mortalidade;
-- taxa de ocupação de UTI (proporção dos casos internados em UTI);
+Extrair do dataset processado e da web as informações que preenchem o boletim \
+epidemiológico de SRAG, para apoiar a leitura da situação epidemiológica. Cada informação \
+extraída corresponde a um campo do resumo do boletim (descritos no schema `ResumoAgente`):
+- números de casos (total, média, desvio padrão, máximo e mínimo) dos últimos 30 dias e dos \
+últimos 12 meses;
+- número mensal de casos dos últimos 12 meses e taxa de aumento de casos mês a mês;
+- taxa de mortalidade e taxa de ocupação de UTI (proporção dos casos internados em UTI) \
+nos últimos 30 dias e 12 meses;
 - taxa de vacinação (proporção de vacinados contra COVID-19 entre os casos);
-- número diário de casos dos últimos 30 dias;
-- número mensal de casos dos últimos 12 meses.
-Além das métricas, contextualize a situação com notícias recentes sobre SRAG obtidas na web.
+- notícias recentes sobre SRAG obtidas na web, para contextualizar os números;
+- interpretações, conclusão e recomendações baseadas nesses dados.
 </objetivo>
 
 <schema_dataset>
@@ -64,6 +70,9 @@ Registros com EVOLUCAO, VACINA_COV ou UTI ignorados ou nulos foram removidos do 
 <regras>
 - A taxa de vacinação é a proporção de vacinados entre os casos de SRAG, não a cobertura \
 vacinal da população.
+- Os valores finais seguem o padrão brasileiro: datas em DD/MM/AAAA, números com ponto \
+nos milhares e vírgula nos decimais, e taxas com duas casas decimais e o símbolo %. As \
+ferramentas devolvem datas como AAAA-MM-DD e números com ponto decimal, então converta.
 - Os caminhos dos arquivos são fornecidos automaticamente às ferramentas. Não os peça nem \
 os informe ao chamar uma ferramenta.
 - Use a busca e a coleta na web apenas para contextualizar os números, nunca para \
@@ -82,34 +91,43 @@ disponível, diga isso em vez de estimá-la.
 
 
 def _prompt_passos_agente():
-    """Monta o bloco do prompt com os passos que o agente deve seguir no relatório.
+    """Monta o bloco do prompt com os passos que o agente deve seguir no boletim epidemiológico.
 
     Os passos são um checklist dentro do bloco XML `<passos>`, incluído no prompt de
-    sistema por `system_prompt_agente`. O checklist obtém as métricas do dataset e as notícias
-    da web com as ferramentas, e novos passos serão acrescentados conforme o relatório
-    for construído.
+    sistema por `system_prompt_agente`. Cada passo chama uma ferramenta e indica quais
+    valores extrair, já no formato dos campos de `ResumoAgente`. O último passo redige os
+    textos interpretativos. O passo de preencher o resumo no estado do agente será
+    acrescentado quando a ferramenta correspondente existir.
 
     Returns:
         Texto do bloco `<passos>` com o checklist.
     """
     return """<passos>
-Siga o checklist abaixo, na ordem, para criar o relatório:
-- [ ] 1. Ler as informações do dataset com a ferramenta `dataframe_info`.
-- [ ] 2. Obter o número mensal de casos dos últimos 12 meses com a ferramenta \
-`num_casos_mensal_ultimos_12_m` e o crescimento mês a mês com a ferramenta \
-`crescimento_mensal_ultimos_12_m`.
-- [ ] 3. Obter a taxa de vacinação com a ferramenta `taxa_de_vacinacao`.
-- [ ] 4. Obter as taxas de mortalidade e de internação em UTI com a ferramenta \
-`taxa_periodo`, chamando-a com `col_target` igual a "EVOLUCAO" (mortalidade) e igual a \
-"UTI" (internação em UTI), para a janela de 30 dias (`dias_filtro` igual a 30) e para a \
-de 12 meses (`dias_filtro` igual a 365).
-- [ ] 5. Buscar notícias recentes sobre SRAG com a ferramenta `web_search`, para \
-contextualizar as métricas (por exemplo, circulação de vírus respiratórios, campanhas de \
-vacinação e situação da rede de saúde).
-- [ ] 6. Coletar o conteúdo das notícias mais relevantes com a ferramenta `web_fetch`, \
-usando apenas as URLs retornadas pela busca, e extrair as informações pertinentes.
+Siga o checklist abaixo, na ordem. Em cada passo, anote os valores extraídos já no formato \
+final:
+- [ ] 1. Chame `dataframe_info`. Extraia a data final do período (`data_maxima`), a data \
+de extração e a porcentagem de dados descartados. A data inicial é a mais recente entre \
+`data_minima` e 364 dias antes de `data_maxima`.
+- [ ] 2. Chame `estatisticas_num_casos`. Extraia, para 30 dias (`30_d`) e 12 meses \
+(`12_m`), o total, a média, o desvio padrão e os dias de máximo e de mínimo (quantidade e \
+data).
+- [ ] 3. Chame `num_casos_mensal_ultimos_12_m` e `crescimento_mensal_ultimos_12_m`. \
+Monte a tabela de crescimento mensal com uma linha por mês (mês no formato MM/AAAA, \
+número de casos e crescimento em %, sem crescimento no primeiro mês).
+- [ ] 4. Chame `taxa_de_vacinacao`. Extraia o número de casos e a proporção de vacinados \
+e de não vacinados.
+- [ ] 5. Chame `taxa_periodo` quatro vezes: com `col_target` "EVOLUCAO" e com "UTI", cada \
+uma com `dias_filtro` 30 e 365. Extraia a taxa de mortalidade (porcentagem de "obito") e \
+a taxa de ocupação de UTI (porcentagem de "uti") em cada janela.
+- [ ] 6. Busque notícias recentes sobre SRAG com `web_search` e leia as mais relevantes \
+com `web_fetch`, usando apenas as URLs da busca. Extraia título, fonte, URL e um resumo \
+de cada uma.
+- [ ] 7. Com os valores extraídos, redija o resumo, as interpretações (evolução dos casos, \
+crescimento mensal, taxas, impacto das notícias), a conclusão e as recomendações para a \
+Indicium HealthCare Inc., sempre apoiadas nos números.
 
-Ao concluir todos os passos do checklist, encerre o turno.
+Ao concluir todos os passos, apresente os valores extraídos e os textos redigidos, \
+organizados pelos campos do resumo, e encerre o turno.
 </passos>"""
 
 

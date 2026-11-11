@@ -1,4 +1,4 @@
-"""Fluxo agêntico que gera o relatório de SRAG com LangGraph e o Claude.
+"""Fluxo agêntico que gera o boletim epidemiológico de SRAG com LangGraph e o Claude.
 
 O grafo tem dois nós em ciclo: `assistente`, que chama o modelo com as ferramentas, e
 `tools`, que executa as ferramentas locais pedidas. As ferramentas da web (`busca_web` e
@@ -8,7 +8,7 @@ termina quando o modelo responde sem pedir novas ferramentas. O estado do agente
 ferramentas locais em vez de passados pelo modelo.
 
 Ao executar, o script grava o diagrama do grafo em `graph_agentic_workflow.png`, roda o
-agente com o pedido do relatório e registra as mensagens no arquivo de log. Requer a
+agente com o pedido do boletim epidemiológico e registra as mensagens no arquivo de log. Requer a
 variável de ambiente `ANTHROPIC_API_KEY`, por exemplo em um arquivo `.env`.
 """
 
@@ -28,6 +28,7 @@ from src.tools import (
     coleta_web,
     crescimento_mensal_ultimos_12_m,
     dataframe_info,
+    estatisticas_num_casos,
     num_casos_mensal_ultimos_12_m,
     taxa_de_vacinacao,
     taxa_periodo,
@@ -42,6 +43,7 @@ logger = build_logger(Path(__file__).name)
 
 tools = [
     dataframe_info,
+    estatisticas_num_casos,
     num_casos_mensal_ultimos_12_m,
     crescimento_mensal_ultimos_12_m,
     taxa_de_vacinacao,
@@ -103,7 +105,7 @@ srag_reporter.get_graph().draw_mermaid_png(output_file_path="graph_agentic_workf
 # execução do app
 if __name__ == "__main__":
     query = {
-        "messages": [("user", "Faça o relatório de SRAG.")],
+        "messages": [("user", "Faça o boletim epidemiológico de SRAG.")],
         "filepath_dataset": FILEPATH_DATASET,
         "plot_num_casos_12_m": PLOT_12_M,
         "plot_num_casos_30_d": PLOT_30_D,

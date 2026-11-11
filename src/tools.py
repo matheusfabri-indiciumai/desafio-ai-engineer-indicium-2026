@@ -380,6 +380,6 @@ def taxa_periodo(
     return df_filtrado.to_json(orient="index")
 
 
-# tool leitura de relatorio
+# tool leitura de boletim
 
-# tool salvamento relatorio
+# tool salvamento de boletim
