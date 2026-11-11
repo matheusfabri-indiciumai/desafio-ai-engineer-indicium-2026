@@ -60,8 +60,8 @@ load_dotenv()
 
 MODEL_ANTHROPIC = "claude-haiku-5-5"
 FILEPATH_DATASET = "./data/srag_data_2026_clean.parquet"
-PLOT_12_M = "./plots/num_casos_12_meses.png"
-PLOT_30_D = "./plots/num_casos_30_dias.png"
+PLOT_12_M = "../plots/num_casos_12_meses.png"
+PLOT_30_D = "../plots/num_casos_30_dias.png"
 FILEPATH_TEMPLATE = "./src/template_boletim.md"
 
 
