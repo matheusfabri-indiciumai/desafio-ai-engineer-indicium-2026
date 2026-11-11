@@ -89,14 +89,14 @@ def build_logger(program_name):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
-        filename=f"{program_name}.log",
+        filename=f"./logs/{program_name}.log",
         filemode="w",
     )
 
     return logging.getLogger(__name__)
 
 
-def copy_template(template_path, dest_folder="."):
+def copy_template(template_path, dest_folder="./boletins_epidemiologicos"):
     """Copia o template do boletim para um novo arquivo com data e hora no nome.
 
     O arquivo de destino se chama `boletim_epidemiologico_srag__AAAA_MM_DD__HH_MM_SS.md`,

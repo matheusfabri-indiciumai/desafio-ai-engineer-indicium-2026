@@ -117,32 +117,35 @@ def criar_boletim(state: EstadoAgente):
     """Copia o template e o preenche com o resumo do estado, gerando o boletim em arquivo.
 
     A cópia é gravada na pasta de execução, com data e hora no nome (ver `copy_template`).
-    O nó não atualiza o estado.
+    Se o agente encerrou sem chamar `atualizar_summary`, o estado não tem `summary`: o nó
+    registra o erro no log e não gera o boletim, para não deixar uma cópia do template sem
+    preencher. O nó não atualiza o estado.
 
     Args:
         state: Estado do agente, do qual são lidos `filepath_template` e `summary`.
-
-    Raises:
-        KeyError: Se `summary` não estiver no estado, ou seja, se o agente encerrou sem
-            chamar `atualizar_summary`.
     """
+    # proteção: sem resumo, não há o que preencher
+    if not state.get("summary"):
+        logger.error("boletim não gerado: o agente encerrou sem chamar atualizar_summary")
+        return
+
     # copiar template boletim
     boletim_filepath = copy_template(state["filepath_template"])
 
     # escrever template boletim
     fill_template(dest_filepath=boletim_filepath, summary=state["summary"])
+    logger.info(f"boletim gerado em {boletim_filepath}")
 
 
 # add nós
 builder.add_node("assistente", assistente)
 builder.add_node("tools", ToolNode(tools))
+builder.add_node("criar_boletim", criar_boletim)
 
-
-# add arestas (START -> (assistente <-> tools) -> end)
+# add arestas (START -> (assistente <-> tools), (assistente -> criar_boletim) -> end)
 builder.add_edge(START, "assistente")
 builder.add_conditional_edges(
-    "assistente",
-    tools_condition,
+    "assistente", tools_condition, path_map={"tools": "tools", "__end__": "criar_boletim"}
 )
 builder.add_edge("tools", "assistente")
 
@@ -152,7 +155,7 @@ srag_reporter = builder.compile()
 
 
 # plotar grafo para visualização
-srag_reporter.get_graph().draw_mermaid_png(output_file_path="graph_agentic_workflow.png")
+srag_reporter.get_graph().draw_mermaid_png(output_file_path="./docs/graph_agentic_workflow.png")
 
 
 # execução do app

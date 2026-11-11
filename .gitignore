@@ -6,4 +6,4 @@ __pycache__/
 *.py[cod]
 *$py.class
 .env
-boletim_epidemiologico_srag*.md
+boletins_epidemiologicos/*.md
