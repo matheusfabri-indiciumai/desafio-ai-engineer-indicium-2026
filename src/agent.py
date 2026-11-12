@@ -1,14 +1,25 @@
 """Definições do agente que gera o boletim epidemiológico de SRAG.
 
-Reúne a construção do prompt de sistema do agente, com o contexto, o objetivo, a
-descrição do dataset processado, as regras e os passos a seguir, e o esquema do resumo
-(`ResumoAgente`) com os valores que preenchem o template do boletim.
+Reúne o prompt de sistema do agente, com o contexto, o objetivo, a descrição do dataset
+processado, as regras e os passos a seguir; os esquemas do resumo (`ResumoAgente` e
+`ResumoBoletim`) com os valores que preenchem o template do boletim; o estado
+compartilhado entre os nós (`EstadoAgente`); e os nós do grafo: `assistente`, criado por
+`criar_no_assistente` a partir do modelo com as ferramentas, e `criar_boletim`. A
+construção do grafo, com o modelo, as ferramentas e as arestas, fica em
+`scripts/agentic_workflow.py`.
 """
 
 import datetime
+import logging
+from typing import Annotated, TypedDict
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AnyMessage, SystemMessage
+from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
+
+from src.utils import copy_template, fill_template
+
+logger = logging.getLogger(__name__)
 
 # prompts
 
@@ -327,3 +338,80 @@ class ResumoBoletim(ResumoAgente):
     plot_num_casos_12_m: str = Field(
         description="Caminho da imagem do gráfico do número diário de casos dos últimos 12 meses."
     )
+
+
+# estado do agente
+
+
+class EstadoAgente(TypedDict):
+    """Estado compartilhado entre os nós do grafo.
+
+    Attributes:
+        filepath_dataset: Caminho do dataset processado, injetado nas ferramentas locais.
+        plot_num_casos_12_m: Caminho do gráfico do número diário de casos dos últimos 12
+            meses, injetado em `atualizar_summary`.
+        plot_num_casos_30_d: Caminho do gráfico do número diário de casos dos últimos 30
+            dias, injetado em `atualizar_summary`.
+        filepath_template: Caminho do template markdown do boletim.
+        summary: Resumo com os valores que preenchem o template. Só existe depois de o
+            agente chamar `atualizar_summary`.
+        messages: Histórico de mensagens, acumulado pelo reducer `add_messages`.
+    """
+
+    filepath_dataset: str
+    plot_num_casos_12_m: str
+    plot_num_casos_30_d: str
+    filepath_template: str
+    summary: ResumoBoletim
+    messages: Annotated[list[AnyMessage], add_messages]
+
+
+# nós do grafo
+
+
+def criar_no_assistente(llm_with_tools):
+    """Cria o nó `assistente`, que chama o modelo com as ferramentas.
+
+    O modelo e as ferramentas são definidos na construção do grafo, em
+    `scripts/agentic_workflow.py`. Eles entram aqui, e não como importação, porque
+    `src/tools.py` já importa este módulo e um import das ferramentas aqui seria circular.
+
+    Args:
+        llm_with_tools: Modelo de chat com as ferramentas já ligadas (`bind_tools`).
+
+    Returns:
+        Função `assistente(state)`, o nó do grafo. Ela chama o modelo com o prompt de
+        sistema (ver `system_prompt_agente`) e as mensagens do estado, e devolve a
+        atualização do estado com a resposta do modelo, acrescentada a `messages`.
+    """
+
+    def assistente(state: EstadoAgente):
+        sys_msg = system_prompt_agente()
+
+        return {"messages": [llm_with_tools.invoke([sys_msg] + state["messages"])]}
+
+    return assistente
+
+
+def criar_boletim(state: EstadoAgente):
+    """Copia o template e o preenche com o resumo do estado, gerando o boletim em arquivo.
+
+    A cópia é gravada na pasta de execução, com data e hora no nome (ver `copy_template`).
+    Se o agente encerrou sem chamar `atualizar_summary`, o estado não tem `summary`: o nó
+    registra o erro no log e não gera o boletim, para não deixar uma cópia do template sem
+    preencher. O nó não atualiza o estado.
+
+    Args:
+        state: Estado do agente, do qual são lidos `filepath_template` e `summary`.
+    """
+    # proteção: sem resumo, não há o que preencher
+    if not state.get("summary"):
+        logger.error("boletim não gerado: o agente encerrou sem chamar atualizar_summary")
+        return
+
+    # copiar template boletim
+    boletim_filepath = copy_template(state["filepath_template"])
+
+    # escrever template boletim
+    fill_template(dest_filepath=boletim_filepath, summary=state["summary"])
+    logger.info(f"boletim gerado em {boletim_filepath}")
