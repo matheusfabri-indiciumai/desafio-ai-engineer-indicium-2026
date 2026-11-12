@@ -34,6 +34,13 @@ repos:
         files: '(pyproject\.toml|uv\.lock)$'
         pass_filenames: false
 
+      - id: render-prompt
+        name: Render the agent prompt to docs/prompt_agente.md
+        entry: uv run python -m scripts.render_prompts
+        language: system
+        files: '^(src/agent|scripts/render_prompts)\.py$'
+        pass_filenames: false
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.10
     hooks:
