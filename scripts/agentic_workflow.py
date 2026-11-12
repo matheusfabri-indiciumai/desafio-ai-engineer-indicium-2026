@@ -12,7 +12,8 @@ termina quando o modelo responde sem pedir novas ferramentas, e então roda o n�
 `criar_boletim`, que copia o template e o preenche com o resumo gravado no estado.
 
 Ao executar, o script grava o diagrama do grafo em `docs/graph_agentic_workflow.png`, roda
-o agente com o pedido do boletim epidemiológico e registra as mensagens no arquivo de log.
+o agente com o pedido do boletim epidemiológico e registra no arquivo de log as mensagens
+de cada nó, à medida que ele termina (`stream`), em vez de só ao fim da execução.
 Requer a variável de ambiente `ANTHROPIC_API_KEY`, por exemplo em um arquivo `.env`.
 
 Uso, a partir da raiz do repositório: `uv run python -m scripts.agentic_workflow`.
@@ -103,6 +104,13 @@ if __name__ == "__main__":
         "filepath_template": FILEPATH_TEMPLATE,
     }
 
-    response = srag_reporter.invoke(query)
-    for message in response["messages"]:
-        logger.info(f"[{message.type}] {message.text}")
+    logger.info(f"iniciando o agente com o modelo {MODEL_ANTHROPIC} e o dataset {FILEPATH_DATASET}")
+
+    try:
+        for step in srag_reporter.stream(query, stream_mode="updates"):
+            for update in step.values():
+                for message in (update or {}).get("messages", []):
+                    logger.info(f"[{message.type}] {message.text}")
+    except Exception:
+        logger.exception("falha na execução do agente")
+        raise

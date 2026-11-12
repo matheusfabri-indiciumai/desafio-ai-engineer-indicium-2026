@@ -67,6 +67,8 @@ df["EVOLUCAO"] = df["EVOLUCAO"].map(evolucao)
 df["VACINA_COV"] = df["VACINA_COV"].map(vacinacao)
 df["UTI"] = df["UTI"].map(uti)
 
+logger.info(f"dataset lido de {URL_DOWNLOAD} e rotulado: {len(df)} registros")
+
 # descartar dados nulos
 df_cleaned = df.dropna(subset=["EVOLUCAO", "VACINA_COV", "UTI"])
 
@@ -82,6 +84,8 @@ custom_metadata = {
     "data_criacao": datetime.date.today().isoformat(),
     "pct_dados_descartados": f"{pct_dados_descartados:.2f}",
 }
+
+logger.info(f"tabela criada: {table.num_rows} registros e {table.num_columns} colunas")
 
 # data de extração do Open DATASUS, presente no nome do arquivo (INFLUD26-19-10-2026.parquet)
 match_extracao = re.search(r"-(\d{2})-(\d{2})-(\d{4})\.parquet", URL_DOWNLOAD)
@@ -128,3 +132,5 @@ plot_num_casos(
     eixo_y="Número de casos",
     filepath=PLOTS_DIR / "num_casos_12_meses.png",
 )
+
+logger.info(f"gráficos salvos em {PLOTS_DIR}")
