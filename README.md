@@ -2,8 +2,7 @@
 
 ## Como executar
 
-Execute os comandos sempre a partir da raiz do repositório, pois os scripts usam caminhos
-relativos a ela.
+Execute os comandos sempre a partir da raiz do repositório, pois os scripts usam caminhos relativos a ela. O andamento de cada script é registrado em `logs/<script>.py.log`.
 
 Processar os dados (baixa, limpa e gera os gráficos):
 
@@ -13,13 +12,13 @@ uv run python -m scripts.data_fetching_processing <url_fonte> [-f <filepath>]
 
 URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-19-10-2026.parquet"
 
-Gerar o boletim epidemiológico com o agente (requer `ANTHROPIC_API_KEY` no `.env` e o dataset processado no passo anterior):
+Gerar o boletim epidemiológico com o agente (requer `ANTHROPIC_API_KEY` no `.env` e o dataset processado no passo anterior). O boletim é gravado em `boletins_epidemiologicos/`, e as mensagens da conversa com o agente vão para o log à medida que cada nó termina:
 
 ```bash
 uv run python -m scripts.agentic_workflow
 ```
 
-Ver o prompt de sistema do agente:
+Renderizar o prompt de sistema do agente em [docs/prompt_agente.md](docs/prompt_agente.md). O hook de pre-commit `render-prompt` faz isso sozinho quando `src/agent.py` ou o script mudam: nesse caso o commit é interrompido para você adicionar o arquivo atualizado (`git add docs/prompt_agente.md`) e commitar de novo.
 
 ```bash
 uv run python -m scripts.render_prompts
@@ -38,24 +37,25 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 ├── boletins_epidemiologicos/        # Boletins gerados pelo agente (arquivos .md ignorados pelo git)
 ├── data/                            # Datasets baixados e processados (arquivos .parquet ignorados pelo git)
 ├── docs/
-│   ├── graph_agentic_workflow.png   # Diagrama do grafo do agente
-│   └── planning.md                  # Planejamento da solução e das etapas do desafio
-├── logs/                            # Logs de execução dos scripts
+│   ├── graph_agentic_workflow.png   # Diagrama do grafo do agente (gerado pelo agentic_workflow.py)
+│   ├── planning.md                  # Planejamento da solução e das etapas do desafio
+│   └── prompt_agente.md             # Prompt de sistema do agente (gerado pelo render_prompts.py)
+├── logs/                            # Logs de execução dos scripts (arquivos .log ignorados pelo git)
 ├── plots/                           # Gráficos gerados pelo script de processamento (.png ignorados pelo git)
 ├── scripts/
 │   ├── __init__.py
-│   ├── agentic_workflow.py          # Fluxo agêntico com LangGraph que gera o boletim
+│   ├── agentic_workflow.py          # Constrói e executa o grafo do agente (LangGraph) que gera o boletim
 │   ├── data_fetching_processing.py  # Download, limpeza e gráficos dos dados
-│   └── render_prompts.py            # Imprime o prompt de sistema do agente
+│   └── render_prompts.py            # Renderiza o prompt de sistema do agente em docs/prompt_agente.md
 ├── src/
 │   ├── __init__.py
-│   ├── agent.py                     # Prompt do agente e schemas do resumo do boletim
+│   ├── agent.py                     # Prompt, schemas do resumo, estado e nós do agente
 │   ├── template_boletim.md          # Template markdown do boletim epidemiológico
 │   ├── tools.py                     # Ferramentas do agente
 │   └── utils.py                     # Funções utilitárias: filtro de casos, gráfico, logger e template
 ├── .env.example                     # Modelo das variáveis de ambiente (copie para .env e preencha)
 ├── .gitignore
-├── .pre-commit-config.yaml          # Hooks de pre-commit (ruff, basedpyright, entre outros)
+├── .pre-commit-config.yaml          # Hooks de pre-commit (ruff, basedpyright, render do prompt, entre outros)
 ├── .python-version                  # Versão do Python usada no projeto
 ├── eda.ipynb                        # Análise exploratória dos dados
 ├── pyproject.toml                   # Dependências e configuração das ferramentas (ruff, basedpyright)
