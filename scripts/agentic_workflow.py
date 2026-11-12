@@ -4,16 +4,17 @@ O grafo tem dois nós em ciclo: `assistente`, que chama o modelo com as ferramen
 `tools`, que executa as ferramentas locais pedidas, entre elas `atualizar_summary`, que
 grava no estado o resumo com os valores do boletim. As ferramentas da web (`busca_web` e
 `coleta_web`) são ligadas só ao modelo e rodam nos servidores da Anthropic. O ciclo
-termina quando o modelo responde sem pedir novas ferramentas. O nó `criar_boletim`, que
-copia o template e o preenche com o resumo, é definido para rodar depois do ciclo, mas
-ainda não está ligado ao grafo.
+termina quando o modelo responde sem pedir novas ferramentas, e então roda o nó
+`criar_boletim`, que copia o template e o preenche com o resumo gravado no estado.
 
 O estado do agente (`EstadoAgente`) guarda as mensagens, o resumo e os caminhos dos
 arquivos, que são injetados nas ferramentas locais em vez de passados pelo modelo.
 
-Ao executar, o script grava o diagrama do grafo em `graph_agentic_workflow.png`, roda o
-agente com o pedido do boletim epidemiológico e registra as mensagens no arquivo de log.
+Ao executar, o script grava o diagrama do grafo em `docs/graph_agentic_workflow.png`, roda
+o agente com o pedido do boletim epidemiológico e registra as mensagens no arquivo de log.
 Requer a variável de ambiente `ANTHROPIC_API_KEY`, por exemplo em um arquivo `.env`.
+
+Uso, a partir da raiz do repositório: `uv run python -m scripts.agentic_workflow`.
 """
 
 from pathlib import Path

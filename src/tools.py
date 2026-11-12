@@ -129,7 +129,7 @@ def _filtrar_dataframe_coluna(
 def _add_info_metadata(info, filepath):
     """Acrescenta ao dicionário `info` os metadados gravados no arquivo parquet.
 
-    Lê o metadado do schema do arquivo, gravado pelo `data_fetching_processing.py`, e
+    Lê o metadado do schema do arquivo, gravado pelo `scripts/data_fetching_processing.py`, e
     copia para `info` as chaves `data_criacao`, `data_extracao` e `pct_dados_descartados`
     que existirem. Arquivos sem esses metadados não geram erro: as chaves ausentes
     simplesmente não são adicionadas. O dicionário é modificado no lugar e nada é

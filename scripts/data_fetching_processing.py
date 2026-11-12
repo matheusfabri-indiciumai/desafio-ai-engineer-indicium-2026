@@ -7,7 +7,8 @@ dataset limpo em parquet, com os metadados `data_criacao`, `data_extracao` e
 dos últimos 30 dias e dos últimos 12 meses (365 dias). O andamento é registrado em um
 arquivo de log.
 
-Uso: `uv run data_fetching_processing.py <url> [-f <filepath>]`.
+Uso, a partir da raiz do repositório:
+`uv run python -m scripts.data_fetching_processing <url> [-f <filepath>]`.
 """
 
 import argparse
@@ -26,7 +27,7 @@ logger = build_logger(Path(__file__).name)
 
 # parsear variáveis
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 
 parser = argparse.ArgumentParser(
     prog="data_fetching_processing",
