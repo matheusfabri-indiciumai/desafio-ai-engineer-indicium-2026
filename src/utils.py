@@ -3,7 +3,8 @@
 Reúne as funções usadas pelo script de processamento para calcular o número diário de
 casos dentro de uma janela de tempo, salvar o gráfico dessa série em arquivo e
 configurar o logging em arquivo, e as funções usadas pelo agente para copiar o template
-do boletim epidemiológico e preenchê-lo com os valores do resumo.
+do boletim epidemiológico e preenchê-lo com os valores do resumo. Também configura o
+experimento do MLflow que registra os traces do agente.
 """
 
 import datetime
@@ -11,6 +12,7 @@ import logging
 import shutil
 
 import matplotlib.pyplot as plt
+import mlflow
 import pandas as pd
 import seaborn as sns
 
@@ -157,3 +159,37 @@ def fill_template(dest_filepath, summary):
     # escrever informações no arquivo
     with open(dest_filepath, "w", encoding="utf-8") as file:
         file.write(content)
+
+
+def mlflow_setup(experiment_name, logger, tracking_url="http://localhost:5000"):
+    """Garante que o experimento do MLflow exista e ativa o tracking automático do LangChain.
+
+    Define o endereço do servidor de tracking e procura o experimento `experiment_name`
+    nele; se não existir, cria um (registrando o andamento em `logger`). Depois liga o
+    `mlflow.langchain.autolog()`, que registra os traces das chamadas do
+    LangChain/LangGraph, e define o experimento ativo.
+
+    Args:
+        experiment_name: Nome do experimento a procurar, criar e ativar.
+        logger: Logger usado para registrar se o experimento foi encontrado ou criado.
+        tracking_url: Endereço do servidor de tracking do MLflow.
+
+    Raises:
+        mlflow.exceptions.MlflowException: Se o MLflow não conseguir consultar ou criar o
+            experimento.
+    """
+    mlflow.set_tracking_uri(tracking_url)
+
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+
+    if experiment is None:
+        logger.info(f"experimento '{experiment_name}' não existe, criando experimento...")
+        mlflow.create_experiment(name=experiment_name)
+        experiment = mlflow.get_experiment_by_name(experiment_name)
+        logger.info(f"experimento '{experiment_name}' criado com a ID: {experiment.experiment_id}")
+
+    else:
+        logger.info(f"experimento '{experiment_name}' existe com a ID: {experiment.experiment_id}")
+
+    mlflow.langchain.autolog()
+    mlflow.set_experiment(experiment_name)

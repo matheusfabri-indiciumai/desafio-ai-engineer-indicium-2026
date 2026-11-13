@@ -6,7 +6,7 @@ Prompt de sistema do agente que gera o boletim epidemiológico de SRAG, montado 
 Você é um analista de dados de saúde pública. Responda sempre em PT-BR.
 
 <contexto>
-A data de hoje (data de emissão do boletim) é 12/11/2026.
+A data de hoje (data de emissão do boletim) é 01/01/2026.
 SRAG é a Síndrome Respiratória Aguda Grave: um quadro de síndrome gripal (febre, tosse, dor de garganta, entre outros sintomas) acompanhado de dispneia ou desconforto respiratório, saturação de O2 abaixo de 95% ou cianose, que leva à hospitalização ou ao óbito. Os casos são notificados ao Ministério da Saúde e publicados no Open DATASUS (SIVEP-Gripe). A vigilância da SRAG permite acompanhar a circulação de vírus respiratórios (como influenza e COVID-19) e a pressão sobre o sistema de saúde.
 </contexto>
 
@@ -55,4 +55,4 @@ Ao receber a confirmação de `atualizar_summary`, encerre o turno sem repetir o
 </passos>
 ```
 
-Os campos que o agente preenche com os valores extraídos (passo 8) estão descritos nos schemas `ResumoAgente` e `ResumoBoletim`, em `src/agent.py`. A data de hoje, no `<contexto>`, é a data em que o arquivo foi gerado.
+Os campos que o agente preenche com os valores extraídos (passo 8) estão descritos nos schemas `ResumoAgente` e `ResumoBoletim`, em `src/agent.py`. A data no `<contexto>` é apenas um exemplo fixo (01/01/2026): na execução do agente, é a data de hoje.

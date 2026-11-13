@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # prompts
 
 
-def system_prompt_agente():
+def system_prompt_agente(data=None):
     """Monta o prompt de sistema do agente que cria o boletim epidemiológico de SRAG.
 
     O prompt é dividido em blocos XML: `<contexto>` (o que é SRAG), `<objetivo>` (o que o
@@ -32,16 +32,24 @@ def system_prompt_agente():
     `<regras>` (premissas, formato dos valores, limitações dos dados e uso da web) e
     `<passos>` (checklist que o agente deve seguir, com a extração das informações do
     dataset e da web e a gravação do resumo, montado por `_prompt_passos_agente`). A data
-    de emissão do boletim é a data de hoje, inserida no `<contexto>`. Os caminhos dos
-    arquivos não aparecem no prompt: são injetados do estado do agente nas ferramentas.
+    de emissão do boletim é inserida no `<contexto>`. Os caminhos dos arquivos não
+    aparecem no prompt: são injetados do estado do agente nas ferramentas.
+
+    Args:
+        data: Data de emissão do boletim (`datetime.date`). Se omitida, usa a data de hoje,
+            obtida a cada chamada. Passar uma data fixa torna o prompt reproduzível, por
+            exemplo para documentá-lo.
 
     Returns:
         Mensagem de sistema com o prompt do agente.
     """
+    if data is None:
+        data = datetime.date.today()
+
     prompt = f"""Você é um analista de dados de saúde pública. Responda sempre em PT-BR.
 
 <contexto>
-A data de hoje (data de emissão do boletim) é {datetime.date.today():%d/%m/%Y}.
+A data de hoje (data de emissão do boletim) é {data:%d/%m/%Y}.
 SRAG é a Síndrome Respiratória Aguda Grave: um quadro de síndrome gripal (febre, tosse, \
 dor de garganta, entre outros sintomas) acompanhado de dispneia ou desconforto \
 respiratório, saturação de O2 abaixo de 95% ou cianose, que leva à hospitalização ou ao \

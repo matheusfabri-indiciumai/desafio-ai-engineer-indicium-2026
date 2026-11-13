@@ -11,10 +11,16 @@ grava no estado o resumo com os valores do boletim. As ferramentas da web (`busc
 termina quando o modelo responde sem pedir novas ferramentas, e então roda o nó
 `criar_boletim`, que copia o template e o preenche com o resumo gravado no estado.
 
+Ao importar o módulo, o script configura o MLflow (`mlflow_setup`): conecta ao servidor de
+tracking em `http://localhost:5000`, cria o experimento `boletim_epidemiologico`, se ele
+não existir, e liga o autolog do LangChain, que registra no experimento os traces de cada
+execução do agente (chamadas ao modelo e às ferramentas).
+
 Ao executar, o script grava o diagrama do grafo em `docs/graph_agentic_workflow.png`, roda
 o agente com o pedido do boletim epidemiológico e registra no arquivo de log as mensagens
 de cada nó, à medida que ele termina (`stream`), em vez de só ao fim da execução.
-Requer a variável de ambiente `ANTHROPIC_API_KEY`, por exemplo em um arquivo `.env`.
+Requer a variável de ambiente `ANTHROPIC_API_KEY`, por exemplo em um arquivo `.env`, e o
+servidor do MLflow no ar: `mlflow server --host 0.0.0.0 --port 5000`.
 
 Uso, a partir da raiz do repositório: `uv run python -m scripts.agentic_workflow`.
 """
@@ -38,13 +44,17 @@ from src.tools import (
     taxa_de_vacinacao,
     taxa_periodo,
 )
-from src.utils import build_logger
+from src.utils import build_logger, mlflow_setup
 
 # definir logging
 
 logger = build_logger(Path(__file__).name)
 
 load_dotenv()
+
+# mlflow setup
+
+mlflow_setup(experiment_name="boletim_epidemiologico", logger=logger)
 
 # constantes
 

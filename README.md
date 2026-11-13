@@ -12,7 +12,13 @@ uv run python -m scripts.data_fetching_processing <url_fonte> [-f <filepath>]
 
 URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-19-10-2026.parquet"
 
-Gerar o boletim epidemiológico com o agente (requer `ANTHROPIC_API_KEY` no `.env` e o dataset processado no passo anterior). O boletim é gravado em `boletins_epidemiologicos/`, e as mensagens da conversa com o agente vão para o log à medida que cada nó termina:
+Iniciar o servidor do MLflow, que recebe os traces das execuções do agente. Deixe-o rodando em um terminal separado, pois o `agentic_workflow` se conecta a ele ao iniciar. A interface fica em http://localhost:5000:
+
+```bash
+mlflow server --host 0.0.0.0 --port 5000
+```
+
+Gerar o boletim epidemiológico com o agente (requer `ANTHROPIC_API_KEY` no `.env`, o dataset processado no passo anterior e o servidor do MLflow no ar). O boletim é gravado em `boletins_epidemiologicos/`, as mensagens da conversa com o agente vão para o log à medida que cada nó termina, e os traces ficam no experimento `boletim_epidemiologico` do MLflow:
 
 ```bash
 uv run python -m scripts.agentic_workflow
@@ -52,7 +58,7 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 │   ├── agent.py                     # Prompt, schemas do resumo, estado e nós do agente
 │   ├── template_boletim.md          # Template markdown do boletim epidemiológico
 │   ├── tools.py                     # Ferramentas do agente
-│   └── utils.py                     # Funções utilitárias: filtro de casos, gráfico, logger e template
+│   └── utils.py                     # Funções utilitárias: filtro de casos, gráfico, logger, template e MLflow
 ├── .env.example                     # Modelo das variáveis de ambiente (copie para .env e preencha)
 ├── .gitignore
 ├── .pre-commit-config.yaml          # Hooks de pre-commit (ruff, basedpyright, render do prompt, entre outros)
