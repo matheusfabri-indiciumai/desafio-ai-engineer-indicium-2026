@@ -30,6 +30,10 @@ Renderizar o prompt de sistema do agente em [docs/prompt_agente.md](docs/prompt_
 uv run python -m scripts.render_prompts
 ```
 
+### Atalhos com make
+
+O [Makefile](Makefile) tem um alvo para cada etapa acima, e `make help` lista todos: `make data` (aceita outra fonte com `make data URL=<url>`), `make mlflow` (em um terminal separado), `make agent`, `make prompt` e `make clean`. O `make clean` remove os logs, os gráficos, os boletins gerados, o banco do MLflow (`mlflow.db`) e os datasets em `data/`, então será preciso rodar `make data` de novo.
+
 ## Análise exploratória
 
 O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolhas do processamento (colunas usadas, tratamento de nulos e data de referência dos casos). Ele é independente dos scripts: baixa o próprio dataset bruto em `data/srag_data_2026.parquet`. Abra-o no VS Code ou no Jupyter com o kernel do `.venv` (o `ipykernel` vem no extra `dev`: `uv sync --extra dev`).
@@ -64,6 +68,7 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 ├── .pre-commit-config.yaml          # Hooks de pre-commit (ruff, basedpyright, render do prompt, entre outros)
 ├── .python-version                  # Versão do Python usada no projeto
 ├── eda.ipynb                        # Análise exploratória dos dados
+├── Makefile                         # Atalhos para cada etapa (dados, MLflow, agente, prompt, limpeza)
 ├── pyproject.toml                   # Dependências e configuração das ferramentas (ruff, basedpyright)
 ├── README.md
 └── uv.lock                          # Versões travadas das dependências
