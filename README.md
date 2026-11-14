@@ -38,6 +38,13 @@ O [Makefile](Makefile) tem um alvo para cada etapa acima, e `make help` lista to
 
 O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolhas do processamento (colunas usadas, tratamento de nulos e data de referência dos casos). Ele é independente dos scripts: baixa o próprio dataset bruto em `data/srag_data_2026.parquet`. Abra-o no VS Code ou no Jupyter com o kernel do `.venv` (o `ipykernel` vem no extra `dev`: `uv sync --extra dev`).
 
+## Documentação
+
+- [docs/arquitetura.md](docs/arquitetura.md): arquitetura da solução, com o pipeline de processamento dos dados e o fluxo do agente.
+- [docs/boletim_epidemiologico_srag_exemplo.md](docs/boletim_epidemiologico_srag_exemplo.md): exemplo de boletim epidemiológico preenchido.
+- [docs/prompt_agente.md](docs/prompt_agente.md): prompt de sistema do agente.
+- [docs/planning.md](docs/planning.md): planejamento da solução e das etapas do desafio.
+
 ## Estrutura do projeto
 
 ```text
@@ -47,8 +54,9 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 ├── boletins_epidemiologicos/        # Boletins gerados pelo agente (arquivos .md ignorados pelo git)
 ├── data/                            # Datasets baixados e processados (arquivos .parquet ignorados pelo git)
 ├── docs/
-│   ├── assets/
-│   │   └── graph_agentic_workflow.png  # Diagrama do grafo do agente (gerado pelo agentic_workflow.py)
+│   ├── arquitetura.md               # Arquitetura da solução: pipeline de dados e fluxo do agente
+│   ├── assets/                      # Imagens usadas nos documentos (gráficos do boletim de exemplo)
+│   ├── boletim_epidemiologico_srag_exemplo.md  # Exemplo de boletim preenchido pelo agente
 │   ├── planning.md                  # Planejamento da solução e das etapas do desafio
 │   └── prompt_agente.md             # Prompt de sistema do agente (gerado pelo render_prompts.py)
 ├── logs/                            # Logs de execução dos scripts (arquivos .log ignorados pelo git)

@@ -6,6 +6,7 @@
 - [Pipeline de Processamento de Dados](#pipeline-de-processamento-de-dados)
 - [Fluxo Agêntico](#fluxo-agêntico)
   - [Workflow](#workflow)
+  - [Prompt](#prompt)
   - [Ferramentas](#ferramentas)
   - [Boletim Epidemiológico](#boletim-epidemiológico)
 - [MLFlow, Monitoramento e Logging](#mlflow-monitoramento-e-logging)
@@ -38,9 +39,53 @@ Algumas observações:
 
 ## Fluxo Agêntico
 
+Nesta seção descrevemos o fluxo de processamento do agente HealthCare Bot, seu prompt e as ferramentas construídas. Começamos com o grafo que define o fluxo que o agente segue, depois descrevemos o prompt que ele segue, as ferramentas às quais ele tem acesso e, por fim, o resultado: o **Boletim Epidemiológico** preenchido.
+
 ### Workflow
 
-<!-- ![aaa](./assets/graph_agentic_workflow.png) -->
+Para a construção do agente usamos o LangGraph. Isso nos permite definir um grafo de etapas para o agente seguir, com alto controle sobre cada etapa e com a possibilidade de guardar informações necessárias no estado do agente para passá-las ao próximo passo. Todo o procedimento para geração do Boletim Epidemiológico está presente em [agentic_workflow.py](../scripts/agentic_workflow.py), lá realizamos os seguintes passos:
+1. Configuramos o MLflow (`mlflow_setup`) para o registro dos traces das execuções do agente (ver [MLFlow, Monitoramento e Logging](#mlflow-monitoramento-e-logging)).
+2. Definimos o modelo a ser usado, aqui optamos por um modelo Anthropic, `claude-haiku-5-5`, o que exige uma chave de API definida no `.env`. Contudo, o framework é genérico o suficiente para podermos trocar por outro provedor se assim for desejado, exceto pelas ferramentas da web (`busca_web` e `coleta_web`), que rodam nos servidores da Anthropic e teriam de ser substituídas.
+3. Adicionamos as ferramentas criadas ao modelo LLM, construindo assim um agente de fato (ver [Ferramentas](#ferramentas)).
+4. Definimos o estado do agente, `EstadoAgente`, que guarda as informações necessárias para o processamento: os caminhos do dataset, dos gráficos e do template, o resumo (`summary`) e o histórico de mensagens (ver [Estado do agente](#estado-do-agente)).
+5. Com base nesse estado criamos o grafo de processamento que o agente segue, mostrado a seguir:
+
+    ```mermaid
+    flowchart TD
+        START([__start__]) --> assistente[assistente]
+        assistente -- "tool_call" --> tools[tools]
+        tools --> assistente
+        assistente -- "sem tool_call" --> criar_boletim[criar_boletim]
+        criar_boletim --> END([__end__])
+    ```
+6. O agente então segue os passos definidos pelo grafo:
+    - O agente inicia no nó `__start__`.
+    - Então, no nó `assistente`, o agente recebe um prompt com todos os passos que deve seguir para preencher o atributo `summary` de `EstadoAgente` com um JSON estruturado, construído para preencher o template do Boletim Epidemiológico (ver [Prompt](#prompt)). O preenchimento é feito pela ferramenta `atualizar_summary`: os caminhos dos gráficos vêm do estado, sem passar pelo modelo, e o `summary` só existe depois dessa chamada.
+    - Em `assistente` há duas opções. Caso o modelo faça uma chamada de ferramenta (`tool_call`), o fluxo é redirecionado para o nó `tools`, que executa a ferramenta chamada e devolve a resposta ao nó `assistente`. Isso vale para as ferramentas locais: as da web (`busca_web` e `coleta_web`) rodam nos servidores da Anthropic e não passam pelo nó `tools`. No entanto, caso o modelo não chame ferramentas, o fluxo segue para o próximo nó, `criar_boletim`.
+    - Este nó pega o atributo `summary` preenchido no nó anterior, copia o template e o preenche, gerando o boletim em `boletins_epidemiologicos/` (ver [Boletim Epidemiológico](#boletim-epidemiológico)). Note que o preenchimento é determinístico: neste ponto não realizamos uma chamada ao modelo. Se o agente tiver encerrado sem chamar `atualizar_summary`, o nó registra o erro no log e não gera o boletim.
+7. Com isso, o fluxo se encerra em `__end__`.
+
+Algumas observações:
+- **Prompt inicial e parâmetros iniciais:** o agente é chamado com a mensagem do usuário `Faça o boletim epidemiológico de SRAG.` e com os valores iniciais do estado (os caminhos do dataset, dos dois gráficos e do template), definidos como constantes no início de `agentic_workflow.py`, assim como o modelo usado. O prompt de sistema, com os passos que o agente segue, é descrito na seção [Prompt](#prompt).
+- **Ordem de execução:** o agente depende dos arquivos gerados pelo `data_fetching_processing.py` (o dataset limpo e os gráficos), então este script deve ser executado antes do agente. O servidor do MLflow também precisa estar no ar, pois a configuração do MLflow é feita ao iniciar o `agentic_workflow.py`. Os comandos estão no [README](../README.md).
+- **Módulos auxiliares:** o `agentic_workflow.py` só monta o grafo, e o restante fica em `src/`: o prompt, os schemas do resumo, o estado e os nós em `agent.py`, as ferramentas em `tools.py`, as funções utilitárias (gráficos, logger, template e MLflow) em `utils.py` e o template do boletim em `template_boletim.md`.
+
+#### Estado do agente
+
+O `EstadoAgente` é compartilhado entre os nós do grafo, e cada atributo tem um papel:
+
+| Atributo | Descrição | O que vai no campo |
+| --- | --- | --- |
+| `filepath_dataset` | Caminho do dataset processado, injetado nas ferramentas locais. | `./data/srag_data_2026_clean.parquet`, gerado pelo `data_fetching_processing.py`. |
+| `plot_num_casos_12_m` | Caminho do gráfico do número diário de casos dos últimos 12 meses, injetado em `atualizar_summary`. | `../plots/num_casos_12_meses.png`, relativo à pasta `boletins_epidemiologicos/`, onde o boletim é gravado. |
+| `plot_num_casos_30_d` | Caminho do gráfico do número diário de casos dos últimos 30 dias, injetado em `atualizar_summary`. | `../plots/num_casos_30_dias.png`, relativo à pasta `boletins_epidemiologicos/`. |
+| `filepath_template` | Caminho do template markdown do boletim. | `./src/template_boletim.md`. |
+| `summary` | Resumo com os valores que preenchem o template, com um campo para cada `{campo}` do template (`ResumoBoletim`). | Começa vazio e só existe depois de o agente chamar `atualizar_summary`. O agente preenche os campos de texto e a ferramenta acrescenta os caminhos dos gráficos. O nó `criar_boletim` o lê para preencher o template. |
+| `messages` | Histórico de mensagens da conversa, acumulado a cada nó. | Começa com o pedido do usuário (`Faça o boletim epidemiológico de SRAG.`) e recebe as respostas do modelo e das ferramentas. |
+
+Os caminhos e a mensagem inicial são passados na chamada do agente, em `agentic_workflow.py`, e `summary` é o único atributo preenchido durante a execução.
+
+### Prompt
 
 ### Ferramentas
 
