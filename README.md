@@ -47,7 +47,8 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 ├── boletins_epidemiologicos/        # Boletins gerados pelo agente (arquivos .md ignorados pelo git)
 ├── data/                            # Datasets baixados e processados (arquivos .parquet ignorados pelo git)
 ├── docs/
-│   ├── graph_agentic_workflow.png   # Diagrama do grafo do agente (gerado pelo agentic_workflow.py)
+│   ├── assets/
+│   │   └── graph_agentic_workflow.png  # Diagrama do grafo do agente (gerado pelo agentic_workflow.py)
 │   ├── planning.md                  # Planejamento da solução e das etapas do desafio
 │   └── prompt_agente.md             # Prompt de sistema do agente (gerado pelo render_prompts.py)
 ├── logs/                            # Logs de execução dos scripts (arquivos .log ignorados pelo git)

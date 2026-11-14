@@ -16,6 +16,7 @@ import datetime
 import re
 from pathlib import Path
 
+import matplotlib.dates as mdates
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -123,6 +124,7 @@ plot_num_casos(
     eixo_x="Data",
     eixo_y="Número de casos",
     filepath=PLOTS_DIR / "num_casos_30_dias.png",
+    locator=mdates.DayLocator(interval=5),
 )
 
 plot_num_casos(
@@ -131,6 +133,7 @@ plot_num_casos(
     eixo_x="Data",
     eixo_y="Número de casos",
     filepath=PLOTS_DIR / "num_casos_12_meses.png",
+    locator=mdates.MonthLocator(),
 )
 
 logger.info(f"gráficos salvos em {PLOTS_DIR}")

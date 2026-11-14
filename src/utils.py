@@ -11,6 +11,7 @@ import datetime
 import logging
 import shutil
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import mlflow
 import pandas as pd
@@ -44,7 +45,9 @@ def filtrar_dataset_casos(df, dt_col_filtro, dias_filtro, col_target):
     return df_reduced.groupby(dt_col_filtro)[col_target].count()
 
 
-def plot_num_casos(serie, title, eixo_x, eixo_y, filepath, figsize=(10, 5), marker="o", alpha=0.8):
+def plot_num_casos(
+    serie, title, eixo_x, eixo_y, filepath, figsize=(10, 5), marker="o", alpha=0.8, locator=None
+):
     """Desenha a série de número de casos como um gráfico de linha e o salva em arquivo.
 
     A figura é salva em `filepath`, mas não é exibida nem fechada.
@@ -59,12 +62,17 @@ def plot_num_casos(serie, title, eixo_x, eixo_y, filepath, figsize=(10, 5), mark
         figsize: Largura e altura da figura, em polegadas.
         marker: Marcador de cada ponto da linha, no formato do matplotlib.
         alpha: Opacidade da linha, entre 0 e 1.
+        locator: Localizador do matplotlib que define onde ficam as marcas do eixo x, por
+            exemplo `mdates.DayLocator(interval=5)`. Se for `None`, o matplotlib escolhe.
 
     Raises:
         FileNotFoundError: Se a pasta de `filepath` não existir.
     """
     plt.figure(figsize=figsize)
-    sns.lineplot(data=serie, marker=marker, alpha=alpha)
+    ax = sns.lineplot(data=serie, marker=marker, alpha=alpha)
+    if locator is not None:
+        ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m/%Y"))
     plt.title(title)
     plt.xlabel(eixo_x)
     plt.ylabel(eixo_y)

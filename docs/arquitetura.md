@@ -8,7 +8,7 @@
   - [Workflow](#workflow)
   - [Ferramentas](#ferramentas)
   - [Boletim Epidemiológico](#boletim-epidemiológico)
-- [MLFlow e Monitoramento](#mlflow-e-monitoramento)
+- [MLFlow, Monitoramento e Logging](#mlflow-monitoramento-e-logging)
 - [Possíveis Extensões](#possíveis-extensões)
 - [Conclusão](#conclusão)
 
@@ -40,13 +40,13 @@ Algumas observações:
 
 ### Workflow
 
-<!-- ![aaa](./graph_agentic_workflow.png) -->
+<!-- ![aaa](./assets/graph_agentic_workflow.png) -->
 
 ### Ferramentas
 
 ### Boletim Epidemiológico
 
-## MLFlow e Monitoramento
+## MLFlow, Monitoramento e Logging
 
 ## Possíveis Extensões
 

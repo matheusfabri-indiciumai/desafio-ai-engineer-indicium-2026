@@ -16,9 +16,9 @@ tracking em `http://localhost:5000`, cria o experimento `boletim_epidemiologico`
 não existir, e liga o autolog do LangChain, que registra no experimento os traces de cada
 execução do agente (chamadas ao modelo e às ferramentas).
 
-Ao executar, o script grava o diagrama do grafo em `docs/graph_agentic_workflow.png`, roda
-o agente com o pedido do boletim epidemiológico e registra no arquivo de log as mensagens
-de cada nó, à medida que ele termina (`stream`), em vez de só ao fim da execução.
+Ao executar, o script grava o diagrama do grafo em `docs/assets/graph_agentic_workflow.png`,
+roda o agente com o pedido do boletim epidemiológico e registra no arquivo de log as
+mensagens de cada nó, à medida que ele termina (`stream`), em vez de só ao fim da execução.
 Requer a variável de ambiente `ANTHROPIC_API_KEY`, por exemplo em um arquivo `.env`, e o
 servidor do MLflow no ar: `mlflow server --host 0.0.0.0 --port 5000`.
 
@@ -101,7 +101,9 @@ builder.add_edge("tools", "assistente")
 srag_reporter = builder.compile()
 
 # plotar grafo para visualização
-srag_reporter.get_graph().draw_mermaid_png(output_file_path="./docs/graph_agentic_workflow.png")
+srag_reporter.get_graph().draw_mermaid_png(
+    output_file_path="./docs/assets/graph_agentic_workflow.png"
+)
 
 
 # execução do app
