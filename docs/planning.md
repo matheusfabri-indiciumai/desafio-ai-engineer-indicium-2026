@@ -134,9 +134,9 @@ Nesta etapa desenvolvemos o fluxo agêntico. Temos:
 Finalizamos o planejamento com a documentação e entrega do desafio.
 
 - [ ] Escrita da documentação do projeto:
-  - [ ] Detalhamento do pipeline de processamento dos dados.
+  - [X] Detalhamento do pipeline de processamento dos dados.
   - [ ] Detalhamento do fluxo agêntico.
   - [ ] Escrever README do projeto.
   - [ ] Detalhar possíveis extensões da PoC para um produto final.
-  - [ ] Renderizar os prompts.
+  - [X] Renderizar os prompts.
 - [ ] Entrega via plataforma da Indicium AI training.
