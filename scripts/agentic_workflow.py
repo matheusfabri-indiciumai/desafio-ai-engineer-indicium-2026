@@ -22,9 +22,15 @@ ao fim da execução.
 Requer a variável de ambiente `ANTHROPIC_API_KEY`, por exemplo em um arquivo `.env`, e o
 servidor do MLflow no ar: `mlflow server --host 0.0.0.0 --port 5000`.
 
-Uso, a partir da raiz do repositório: `uv run python -m scripts.agentic_workflow`.
+O modelo, o dataset, os gráficos e o template podem ser trocados por argumentos de linha
+de comando (`--model`, `--filepath_dataset`, `--filepath_plot_12_m`,
+`--filepath_plot_30_d` e `--filepath_template`), todos opcionais. Os argumentos são lidos
+antes da configuração do MLflow, então `--help` funciona sem o servidor no ar.
+
+Uso, a partir da raiz do repositório: `uv run python -m scripts.agentic_workflow [opções]`.
 """
 
+import argparse
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -50,19 +56,61 @@ from src.utils import build_logger, mlflow_setup
 
 logger = build_logger(Path(__file__).name)
 
+# parsear variáveis
+
+parser = argparse.ArgumentParser(
+    prog="agentic_workflow",
+    description=(
+        "Gera o boletim epidemiológico de SRAG com o agente. Todos os argumentos são "
+        "opcionais e têm um valor padrão."
+    ),
+)
+
+parser.add_argument(
+    "--model",
+    default="claude-haiku-5-5",
+    help="Modelo da Anthropic usado pelo agente",
+)
+parser.add_argument(
+    "--filepath_dataset",
+    default="./data/srag_data_2026_clean.parquet",
+    help="Filepath do dataset limpo, gerado pelo data_fetching_processing",
+)
+parser.add_argument(
+    "--filepath_plot_12_m",
+    default="../plots/num_casos_12_meses.png",
+    help=(
+        "Filepath do gráfico dos últimos 12 meses, como será referenciado no boletim "
+        "(relativo à pasta boletins_epidemiologicos)"
+    ),
+)
+parser.add_argument(
+    "--filepath_plot_30_d",
+    default="../plots/num_casos_30_dias.png",
+    help=(
+        "Filepath do gráfico dos últimos 30 dias, como será referenciado no boletim "
+        "(relativo à pasta boletins_epidemiologicos)"
+    ),
+)
+parser.add_argument(
+    "--filepath_template",
+    default="./src/template_boletim.md",
+    help="Filepath do template markdown do boletim",
+)
+
+args = parser.parse_args()
+
+MODEL_ANTHROPIC = args.model
+FILEPATH_DATASET = args.filepath_dataset
+PLOT_12_M = args.filepath_plot_12_m
+PLOT_30_D = args.filepath_plot_30_d
+FILEPATH_TEMPLATE = args.filepath_template
+
 load_dotenv()
 
 # mlflow setup
 
 mlflow_setup(experiment_name="boletim_epidemiologico", logger=logger)
-
-# constantes
-
-MODEL_ANTHROPIC = "claude-haiku-5-5"
-FILEPATH_DATASET = "./data/srag_data_2026_clean.parquet"
-PLOT_12_M = "../plots/num_casos_12_meses.png"
-PLOT_30_D = "../plots/num_casos_30_dias.png"
-FILEPATH_TEMPLATE = "./src/template_boletim.md"
 
 # tools
 

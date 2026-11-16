@@ -66,7 +66,7 @@ Para a construção do agente usamos o LangGraph. Isso nos permite definir um gr
 7. Com isso, o fluxo se encerra em `__end__`.
 
 Algumas observações:
-- **Prompt inicial e parâmetros iniciais:** o agente é chamado com a mensagem do usuário `Faça o boletim epidemiológico de SRAG.` e com os valores iniciais do estado (os caminhos do dataset, dos dois gráficos e do template), definidos como constantes no início de `agentic_workflow.py`, assim como o modelo usado. O prompt de sistema, com os passos que o agente segue, é descrito na seção [Prompt](#prompt).
+- **Prompt inicial e parâmetros iniciais:** o agente é chamado com a mensagem do usuário `Faça o boletim epidemiológico de SRAG.` e com os valores iniciais do estado (os caminhos do dataset, dos dois gráficos e do template), definidos, assim como o modelo usado, por argumentos de linha de comando de `agentic_workflow.py` (`--model`, `--filepath_dataset`, `--filepath_plot_12_m`, `--filepath_plot_30_d` e `--filepath_template`), todos opcionais e com um valor padrão. O prompt de sistema, com os passos que o agente segue, é descrito na seção [Prompt](#prompt).
 - **Ordem de execução:** o agente depende dos arquivos gerados pelo `data_fetching_processing.py` (o dataset limpo e os gráficos), então este script deve ser executado antes do agente. O servidor do MLflow também precisa estar no ar, pois a configuração do MLflow é feita ao iniciar o `agentic_workflow.py`. Os comandos estão no [README](../README.md).
 - **Módulos auxiliares:** o `agentic_workflow.py` só monta o grafo, e o restante fica em `src/`: o prompt, os schemas do resumo, o estado e os nós em `agent.py`, as ferramentas em `tools.py`, as funções utilitárias (gráficos, logger, template e MLflow) em `utils.py` e o template do boletim em `template_boletim.md`.
 
@@ -132,6 +132,21 @@ Algumas observações:
 - **Formato dos retornos:** as ferramentas devolvem dados serializáveis em JSON, com datas em `AAAA-MM-DD` e números com ponto decimal. A conversão para o padrão brasileiro (datas em DD/MM/AAAA e vírgula nos decimais) é feita pelo agente, conforme as regras do prompt.
 
 ### Boletim Epidemiológico
+
+O objetivo final do fluxo agêntico é a criação do **Boletim Epidemiológico de SRAG** em markdown. O nó `criar_boletim` copia o template do boletim (presente em [template_boletim.md](../src/template_boletim.md)) para o diretório [boletins_epidemiologicos](../boletins_epidemiologicos/) e preenche a cópia. Note que este passo é determinístico: o agente somente preenche `summary` e nós usamos as informações presentes nele para substituir cada campo `{campo}` do template. O Boletim Epidemiológico é nomeado com o timestamp no padrão `boletim_epidemiologico_srag__YYYY_MM_DD__HH_MM_SS.md`, para não sobrescrever boletins anteriores, e segue um formato fixo, para padronização, com as seguintes partes:
+- **Header:** título, destinatário (Indicium HealthCare Inc.), autoria (HealthCare Bot, o agente de IA), data de emissão, período analisado e fonte dos dados, com a data de extração. Traz também o aviso de que o documento foi gerado automaticamente por um agente de IA e deve ser revisado por um profissional antes de ser usado em decisões.
+- **Resumo:** parágrafo curto, escrito pelo agente, com a situação do número de casos, as principais taxas e o contexto trazido pelas notícias.
+- **Sumário:** índice com links para as seções e subseções do boletim.
+- **Introdução:** texto fixo sobre o que é a SRAG e sobre o objetivo do boletim para o período analisado.
+- **Métodos:** texto fixo que descreve o estudo (descritivo), o banco de dados (Sivep-Gripe, publicado no Open DATASUS, e as notícias da web como fonte complementar), a definição de casos, a coleta e o tratamento dos dados (colunas usadas, rotulagem e descarte dos nulos, com a porcentagem descartada e a data de extração) e as análises (janelas de tempo, estatísticas e taxas). O período, a data de extração e a porcentagem de dados descartados são preenchidos a partir do `summary`.
+- **Resultados e Discussão:** dividido em duas partes:
+    - *Número de casos:* os gráficos dos últimos 30 dias e dos últimos 12 meses, com a interpretação do agente; a tabela de estatísticas (total, média, desvio padrão e dias de máximo e de mínimo); e a tabela de crescimento mensal, com uma nota sobre os dados incompletos dos últimos dias e a interpretação do agente.
+    - *Demais métricas:* as tabelas de mortalidade e ocupação de UTI (30 dias e 12 meses) e de vacinação, com uma interpretação do agente.
+- **Últimas notícias sobre SRAG:** lista das notícias encontradas na web (título, fonte, URL e um resumo de cada uma) e a análise do impacto delas e de sua relação com os dados.
+- **Conclusão e recomendações:** conclusão do agente, retomando os principais achados, e recomendações para a Indicium HealthCare Inc., cada uma ligada a um achado dos dados.
+- **Referências bibliográficas:** as fontes dos dados (Open DATASUS e o dicionário de dados) e a referência metodológica (Boletim Epidemiológico do Ministério da Saúde), que são fixas no template, e as fontes das demais informações, como as notícias, preenchidas pelo agente.
+
+Em [boletim_epidemiologico_srag_exemplo.md](boletim_epidemiologico_srag_exemplo.md) fornecemos um exemplo de Boletim Epidemiológico preenchido.
 
 ## MLFlow, Monitoramento e Logging
 

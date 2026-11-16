@@ -21,8 +21,10 @@ mlflow server --host 0.0.0.0 --port 5000
 Gerar o boletim epidemiológico com o agente (requer `ANTHROPIC_API_KEY` no `.env`, o dataset processado no passo anterior e o servidor do MLflow no ar). O boletim é gravado em `boletins_epidemiologicos/`, as mensagens da conversa com o agente vão para o log à medida que cada nó termina, e os traces ficam no experimento `boletim_epidemiologico` do MLflow:
 
 ```bash
-uv run python -m scripts.agentic_workflow
+uv run python -m scripts.agentic_workflow [--model <modelo>] [--filepath_dataset <filepath>] [--filepath_template <filepath>]
 ```
+
+Todos os argumentos são opcionais. Além dos acima, `--filepath_plot_12_m` e `--filepath_plot_30_d` definem os caminhos dos gráficos como serão referenciados no boletim, e `--help` mostra os valores padrão.
 
 Renderizar o prompt de sistema do agente em [docs/prompt_agente.md](docs/prompt_agente.md). O hook de pre-commit `render-prompt` faz isso sozinho quando `src/agent.py` ou o script mudam: nesse caso o commit é interrompido para você adicionar o arquivo atualizado (`git add docs/prompt_agente.md`) e commitar de novo.
 
