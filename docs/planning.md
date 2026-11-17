@@ -138,6 +138,6 @@ Finalizamos o planejamento com a documentação e entrega do desafio.
   - [X] Detalhamento do fluxo agêntico.
   - [ ] Escrever README do projeto.
   - [X] Detalhar Logging e MLFlow.
-  - [ ] Detalhar possíveis extensões da PoC para um produto final.
+  - [X] Detalhar possíveis extensões da PoC para um produto final.
   - [X] Renderizar os prompts.
 - [ ] Entrega via plataforma da Indicium AI training.

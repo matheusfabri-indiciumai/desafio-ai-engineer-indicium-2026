@@ -1,7 +1,5 @@
 # PoC — Arquitetura do Assistente HealthCare Bot
 
-## Sumário
-
 - [Contexto](#contexto)
 - [Pipeline de Processamento de Dados](#pipeline-de-processamento-de-dados)
 - [Fluxo Agêntico](#fluxo-agêntico)
@@ -14,10 +12,13 @@
   - [Logging](#logging)
 - [Possíveis Extensões](#possíveis-extensões)
 - [Conclusão](#conclusão)
+- [TL;DR](#tldr)
 
 ## Contexto
 
-TODO
+A Indicium HealthCare Inc. quer uma solução baseada em dados que ajude profissionais da área da saúde a acompanhar, em tempo real, a severidade e o avanço de surtos de doenças. Para avaliar a viabilidade dessa solução, foi proposta uma PoC: o **HealthCare Bot**, um agente de IA generativa que consulta os dados de internações por Síndrome Respiratória Aguda Grave (SRAG) do Open DATASUS e notícias recentes sobre o tema, e gera de forma automatizada um **Boletim Epidemiológico**.
+
+O boletim traz as métricas de taxa de aumento de casos, taxa de mortalidade, taxa de ocupação de UTI e taxa de vacinação, além de dois gráficos do número de casos (últimos 30 dias e últimos 12 meses), acompanhados de explicações que ajudam a compreender o cenário. Nas próximas seções descrevemos o pipeline de processamento dos dados, o fluxo agêntico, o monitoramento da aplicação e as possíveis extensões da PoC para criar um produto final.
 
 ## Pipeline de Processamento de Dados
 
@@ -191,4 +192,18 @@ Dessa forma, vemos que é possível expandir o PoC de diferentes maneiras. A esc
 
 ## Conclusão
 
-TODO
+A solução proposta é, hoje, simples, mas já demonstra robustez, como mostra o [boletim de exemplo](boletim_epidemiologico_srag_exemplo.md) gerado pelo agente: um documento padronizado, com as métricas, os gráficos, as interpretações e as notícias que o desafio pede. Ela também agrega valor ao liberar os analistas da tarefa repetitiva de produzir relatórios periodicamente, para que se dediquem a atividades mais produtivas, como o entendimento do cenário epidemiológico e a tomada de decisão.
+
+Para a orquestração do agente escolhemos o LangGraph, uma ferramenta open-source, amplamente usada e robusta, o que favorece o desenvolvimento de uma solução estável e de alto valor. Com ele, o fluxo é um grafo explícito, com estado compartilhado e etapas bem definidas, e o preenchimento do boletim é determinístico, o que separa a análise feita pelo modelo da formatação do documento. Outras decisões de projeto contribuem para a confiabilidade da solução: as métricas vêm sempre do dataset, por meio de ferramentas, e a web serve apenas para contextualizá-las; cada execução fica registrada nos traces do MLflow e nos logs; e as etapas podem ser reproduzidas com os comandos do [README](../README.md) e do Makefile.
+
+Por fim, a PoC tem limitações que devem ser consideradas. O boletim é gerado por um agente de IA e deve ser revisado por um profissional antes de ser usado em decisões, e os números herdam as limitações dos dados: o descarte dos registros sem desfecho, a subestimação dos casos mais recentes e o uso apenas do arquivo de 2026. Apresentamos também possíveis extensões, na seção [Possíveis Extensões](#possíveis-extensões), para a criação de uma solução robusta em produção.
+
+## TL;DR
+
+- **Contexto:** a Indicium HealthCare Inc. quer acompanhar surtos de doenças em tempo real. A PoC é o HealthCare Bot, um agente de IA que gera um Boletim Epidemiológico de SRAG com dados do Open DATASUS e notícias recentes.
+- **Pipeline de dados:** o `data_fetching_processing.py` lê o dataset, mantém cinco colunas, rotula os valores, descarta os registros com nulos, salva o dataset limpo com metadados e gera os gráficos de casos dos últimos 30 dias e 12 meses.
+- **Fluxo agêntico:** o agente é um grafo LangGraph com os nós `assistente` e `tools`, em ciclo, e `criar_boletim`. Um prompt de sistema em cinco partes guia o agente por um checklist de oito passos, com sete ferramentas locais para consultar os dados e gravar o resumo, e duas ferramentas de web para as notícias.
+- **Boletim:** o nó `criar_boletim` preenche de forma determinística o template com o resumo gravado pelo agente, gerando um boletim em markdown com formato fixo.
+- **Monitoramento:** o MLflow registra os traces de cada execução (chamadas, latência, tokens e custo), e o logging registra o andamento de cada script em `logs/`.
+- **Possíveis extensões:** gatilho periódico ou via Slack, mais fontes de notícias, plataforma de dados como o Databricks, agentes que consultam as tabelas, arquitetura multiagente e integrações como o Google Docs.
+- **Conclusão:** a solução é simples, mas robusta, libera os analistas de tarefas repetitivas e usa o LangGraph para a orquestração. Por ser uma PoC, o boletim deve ser revisado por um profissional.
