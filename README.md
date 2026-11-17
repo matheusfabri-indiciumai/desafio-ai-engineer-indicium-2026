@@ -5,8 +5,7 @@ A Indicium HealthCare Inc. quer uma solução baseada em dados que ajude profiss
 - [Features](#features)
 - [Requisitos](#requisitos)
 - [Configuração](#configuração)
-- [Como utilizar](#como-utilizar)
-  - [Atalhos com make](#atalhos-com-make)
+- [Como utilizar a PoC](#como-utilizar-a-poc)
 - [Análise exploratória](#análise-exploratória)
 - [Documentação](#documentação)
 - [Estrutura do projeto](#estrutura-do-projeto)
@@ -26,7 +25,7 @@ A Indicium HealthCare Inc. quer uma solução baseada em dados que ajude profiss
 
 - **Python 3.11 ou superior:** o projeto fixa a versão 3.11 em `.python-version`, e o `uv` a instala caso ela não esteja disponível.
 - **[uv](https://docs.astral.sh/uv/):** gerenciador de pacotes e ambientes usado para instalar as dependências travadas em `uv.lock` e executar os scripts (`uv run`).
-- **make (opcional):** usado pelos atalhos do [Makefile](Makefile), geralmente já instalado em Linux e macOS. Os comandos equivalentes estão em [Como utilizar](#como-utilizar).
+- **make (opcional):** usado pelos atalhos do [Makefile](Makefile), geralmente já instalado em Linux e macOS. Os comandos equivalentes estão em [Como utilizar a PoC](#como-utilizar-a-poc).
 - **Chave de API da Anthropic:** a variável `ANTHROPIC_API_KEY`, definida em um arquivo `.env` (o `.env.example` é o modelo), com acesso ao modelo usado pelo agente e às ferramentas de busca e coleta na web.
 
 ## Configuração
@@ -48,41 +47,31 @@ Para o uso de modelos Anthropic é necessário gerar uma chave de API da Anthrop
 cp .env.example .env
 ```
 
-## Como utilizar
+## Como utilizar a PoC
 
-Execute os comandos sempre a partir da raiz do repositório, pois os scripts usam caminhos relativos a ela. O andamento de cada script é registrado em `logs/<script>.py.log`.
+Para utilizar a solução, sugerimos o [Makefile](Makefile), que tem um target para cada etapa. Use `make help` para listá-los. Os targets, na ordem de uso, são:
+- `make data`: baixa o dataset do Open DATASUS, limpa os dados e gera os gráficos de casos (aceita outra fonte com `make data URL=<url>`).
+- `make mlflow`: sobe o servidor do MLflow, que recebe os traces das execuções do agente (em um terminal separado). A interface fica em http://localhost:5000.
+- `make agent`: executa o agente e gera o boletim epidemiológico em `boletins_epidemiologicos/`. Requer `make data` e `make mlflow` antes e a `ANTHROPIC_API_KEY` no `.env`.
+- `make prompt`: renderiza o prompt de sistema do agente em [docs/prompt_agente.md](docs/prompt_agente.md).
+- `make clean`: remove os logs, os gráficos, os boletins gerados, o banco do MLflow (`mlflow.db`) e os datasets em `data/`, então será preciso rodar `make data` de novo.
 
-Processar os dados (baixa, limpa e gera os gráficos):
-
+Se preferir, os comandos podem ser executados diretamente, sempre a partir da raiz do repositório, pois os scripts usam caminhos relativos a ela. Por exemplo, para processar os dados (equivale ao `make data`) utilizamos:
 ```bash
 uv run python -m scripts.data_fetching_processing <url_fonte> [-f <filepath>]
 ```
-
-Por exemplo, para usar o arquivo extraído do Open DATASUS em 19/10/2026, a `<url_fonte>` é `https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-19-10-2026.parquet`.
-
-Iniciar o servidor do MLflow, que recebe os traces das execuções do agente. Deixe-o rodando em um terminal separado, pois o `agentic_workflow` se conecta a ele ao iniciar. A interface fica em http://localhost:5000:
-
-```bash
-uv run mlflow server --host 127.0.0.1 --port 5000
-```
-
-Gerar o boletim epidemiológico com o agente (requer `ANTHROPIC_API_KEY` no `.env`, o dataset processado no passo anterior e o servidor do MLflow no ar). O boletim é gravado em `boletins_epidemiologicos/`, as mensagens da conversa com o agente vão para o log à medida que cada nó termina, e os traces ficam no experimento `boletim_epidemiologico` do MLflow:
-
+Neste caso para usar o arquivo extraído do Open DATASUS em 19/10/2026, a `<url_fonte>` é `https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-19-10-2026.parquet`. Já para gerar o boletim epidemiológico com o agente (equivale ao `make agent`):
 ```bash
 uv run python -m scripts.agentic_workflow [--model <modelo>] [--filepath_dataset <filepath>] [--filepath_template <filepath>]
 ```
+Note que todos os argumentos do agente são opcionais. Além dos acima, `--filepath_plot_12_m` e `--filepath_plot_30_d` definem os caminhos dos gráficos como serão referenciados no boletim, e `--help` mostra os valores padrão.
 
-Todos os argumentos são opcionais. Além dos acima, `--filepath_plot_12_m` e `--filepath_plot_30_d` definem os caminhos dos gráficos como serão referenciados no boletim, e `--help` mostra os valores padrão.
-
-Renderizar o prompt de sistema do agente em [docs/prompt_agente.md](docs/prompt_agente.md). O hook de pre-commit `render-prompt` faz isso sozinho quando `src/agent.py` ou o script mudam: nesse caso o commit é interrompido para você adicionar o arquivo atualizado (`git add docs/prompt_agente.md`) e commitar de novo.
-
-```bash
-uv run python -m scripts.render_prompts
-```
-
-### Atalhos com make
-
-O [Makefile](Makefile) tem um alvo para cada etapa acima, e `make help` lista todos: `make data` (aceita outra fonte com `make data URL=<url>`), `make mlflow` (em um terminal separado), `make agent`, `make prompt` e `make clean`. O `make clean` remove os logs, os gráficos, os boletins gerados, o banco do MLflow (`mlflow.db`) e os datasets em `data/`, então será preciso rodar `make data` de novo.
+Algumas observações:
+- O andamento de cada script é registrado em `logs/<script>.py.log`. No caso do agente, as mensagens da conversa vão para o log à medida que cada nó termina, e os traces ficam no experimento `boletim_epidemiologico` do MLflow.
+- O servidor do MLflow precisa estar no ar antes de o agente ser executado, pois o `agentic_workflow` se conecta a ele ao iniciar.
+- Em `plots/` ficam os gráficos gerados, em `data/`, os datasets e, em `boletins_epidemiologicos/`, os boletins. Esses arquivos (`.png`, `.parquet` e `.md`) não são commitados, pois são gerados pelos scripts e podem ser recriados com os comandos acima.
+- O hook de pre-commit `render-prompt` renderiza o prompt sozinho quando `src/agent.py` ou o script mudam: nesse caso o commit é interrompido para você adicionar o arquivo atualizado e commitar novamente.
+- Além dele, os hooks de pre-commit verificam o fim de arquivo, os espaços no fim de linha, os finais de linha misturados, os conflitos de merge, as chaves privadas, os arquivos grandes e os comandos de debug, validam os arquivos `yaml` e `toml`, conferem se o `uv.lock` está atualizado, validam o formato das mensagens de commit (Conventional Commits, com os tipos `feat`, `fix`, `refactor`, `chore`, `docs` e `test`) e rodam o `ruff` (formatação e lint) e o `basedpyright`.
 
 ## Análise exploratória
 
@@ -90,7 +79,7 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 
 ## Documentação
 
-- [docs/arquitetura.md](docs/arquitetura.md): arquitetura da solução, com o pipeline de processamento dos dados, o fluxo do agente (prompt, ferramentas e boletim) e o monitoramento com MLflow e logging.
+- [docs/arquitetura.md](docs/arquitetura.md): arquitetura da solução, com o contexto, o pipeline de processamento dos dados, o fluxo do agente (workflow, prompt, ferramentas e boletim), o monitoramento com MLflow e logging, as possíveis extensões e a conclusão.
 - [docs/boletim_epidemiologico_srag_exemplo.md](docs/boletim_epidemiologico_srag_exemplo.md): exemplo de boletim epidemiológico preenchido.
 - [docs/prompt_agente.md](docs/prompt_agente.md): prompt de sistema do agente.
 - [docs/planning.md](docs/planning.md): planejamento da solução e das etapas do desafio.
@@ -104,7 +93,7 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 ├── boletins_epidemiologicos/        # Boletins gerados pelo agente (arquivos .md ignorados pelo git)
 ├── data/                            # Datasets baixados e processados (arquivos .parquet ignorados pelo git)
 ├── docs/
-│   ├── arquitetura.md               # Arquitetura da solução: pipeline de dados e fluxo do agente
+│   ├── arquitetura.md               # Arquitetura da solução: pipeline de dados, fluxo do agente, monitoramento e extensões
 │   ├── assets/                      # Imagens usadas nos documentos (gráficos do boletim de exemplo)
 │   ├── boletim_epidemiologico_srag_exemplo.md  # Exemplo de boletim preenchido pelo agente
 │   ├── planning.md                  # Planejamento da solução e das etapas do desafio
@@ -128,9 +117,24 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 ├── .python-version                  # Versão do Python usada no projeto
 ├── eda.ipynb                        # Análise exploratória dos dados
 ├── Makefile                         # Atalhos para cada etapa (dados, MLflow, agente, prompt, limpeza)
+├── mlflow.db                        # Banco do servidor do MLflow (gerado ao subir o servidor, ignorado pelo git)
 ├── pyproject.toml                   # Dependências e configuração das ferramentas (ruff, basedpyright)
 ├── README.md
 └── uv.lock                          # Versões travadas das dependências
 ```
 
 ## TL;DR
+
+- **O que é:** uma PoC da Indicium HealthCare Inc. em que um agente de IA gera, de forma automatizada, um Boletim Epidemiológico de SRAG com dados do Open DATASUS e notícias recentes.
+- **Como funciona:** um pipeline de dados baixa e limpa o dataset e gera os gráficos. Em seguida, um agente LangGraph com Claude consulta os dados por meio de ferramentas e busca notícias na web, e o boletim é preenchido de forma determinística a partir de um template. Os traces de cada execução ficam no MLflow.
+- **Para executar:** é preciso ter Python 3.11 ou superior, o `uv` e uma chave de API da Anthropic (ver [Requisitos](#requisitos) e [Configuração](#configuração)).
+
+  ```bash
+  uv sync
+  cp .env.example .env   # e preencha ANTHROPIC_API_KEY
+  make data
+  make mlflow            # em um terminal separado
+  make agent
+  ```
+
+- **Para saber mais:** a [arquitetura](docs/arquitetura.md) descreve a solução em detalhe, e o [boletim de exemplo](docs/boletim_epidemiologico_srag_exemplo.md) mostra o resultado final.

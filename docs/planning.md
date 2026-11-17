@@ -133,10 +133,10 @@ Nesta etapa desenvolvemos o fluxo agêntico. Temos:
 
 Finalizamos o planejamento com a documentação e entrega do desafio.
 
-- [ ] Escrita da documentação do projeto:
+- [X] Escrita da documentação do projeto:
   - [X] Detalhamento do pipeline de processamento dos dados.
   - [X] Detalhamento do fluxo agêntico.
-  - [ ] Escrever README do projeto.
+  - [X] Escrever README do projeto.
   - [X] Detalhar Logging e MLFlow.
   - [X] Detalhar possíveis extensões da PoC para um produto final.
   - [X] Renderizar os prompts.
