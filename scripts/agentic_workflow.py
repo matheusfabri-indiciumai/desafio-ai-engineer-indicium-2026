@@ -20,7 +20,7 @@ Ao executar, o script roda o agente com o pedido do boletim epidemiológico e re
 arquivo de log as mensagens de cada nó, à medida que ele termina (`stream`), em vez de só
 ao fim da execução.
 Requer a variável de ambiente `ANTHROPIC_API_KEY`, por exemplo em um arquivo `.env`, e o
-servidor do MLflow no ar: `mlflow server --host 0.0.0.0 --port 5000`.
+servidor do MLflow no ar: `uv run mlflow server --host 127.0.0.1 --port 5000`.
 
 O modelo, o dataset, os gráficos e o template podem ser trocados por argumentos de linha
 de comando (`--model`, `--filepath_dataset`, `--filepath_plot_12_m`,

@@ -10,12 +10,12 @@ Processar os dados (baixa, limpa e gera os gráficos):
 uv run python -m scripts.data_fetching_processing <url_fonte> [-f <filepath>]
 ```
 
-URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-19-10-2026.parquet"
+Por exemplo, para usar o arquivo extraído do Open DATASUS em 19/10/2026, a `<url_fonte>` é `https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-19-10-2026.parquet`.
 
 Iniciar o servidor do MLflow, que recebe os traces das execuções do agente. Deixe-o rodando em um terminal separado, pois o `agentic_workflow` se conecta a ele ao iniciar. A interface fica em http://localhost:5000:
 
 ```bash
-mlflow server --host 0.0.0.0 --port 5000
+uv run mlflow server --host 127.0.0.1 --port 5000
 ```
 
 Gerar o boletim epidemiológico com o agente (requer `ANTHROPIC_API_KEY` no `.env`, o dataset processado no passo anterior e o servidor do MLflow no ar). O boletim é gravado em `boletins_epidemiologicos/`, as mensagens da conversa com o agente vão para o log à medida que cada nó termina, e os traces ficam no experimento `boletim_epidemiologico` do MLflow:
@@ -42,7 +42,7 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 
 ## Documentação
 
-- [docs/arquitetura.md](docs/arquitetura.md): arquitetura da solução, com o pipeline de processamento dos dados e o fluxo do agente.
+- [docs/arquitetura.md](docs/arquitetura.md): arquitetura da solução, com o pipeline de processamento dos dados, o fluxo do agente (prompt, ferramentas e boletim) e o monitoramento com MLflow e logging.
 - [docs/boletim_epidemiologico_srag_exemplo.md](docs/boletim_epidemiologico_srag_exemplo.md): exemplo de boletim epidemiológico preenchido.
 - [docs/prompt_agente.md](docs/prompt_agente.md): prompt de sistema do agente.
 - [docs/planning.md](docs/planning.md): planejamento da solução e das etapas do desafio.

@@ -9,7 +9,9 @@
   - [Prompt](#prompt)
   - [Ferramentas](#ferramentas)
   - [Boletim Epidemiológico](#boletim-epidemiológico)
-- [MLFlow, Monitoramento e Logging](#mlflow-monitoramento-e-logging)
+- [Monitoramento: MLflow e Logging](#monitoramento-mlflow-e-logging)
+  - [MLflow](#mlflow)
+  - [Logging](#logging)
 - [Possíveis Extensões](#possíveis-extensões)
 - [Conclusão](#conclusão)
 
@@ -44,7 +46,7 @@ Nesta seção descrevemos o fluxo de processamento do agente HealthCare Bot, seu
 ### Workflow
 
 Para a construção do agente usamos o LangGraph. Isso nos permite definir um grafo de etapas para o agente seguir, com alto controle sobre cada etapa e com a possibilidade de guardar informações necessárias no estado do agente para passá-las ao próximo passo. Todo o procedimento para geração do Boletim Epidemiológico está presente em [agentic_workflow.py](../scripts/agentic_workflow.py), lá realizamos os seguintes passos:
-1. Configuramos o MLflow (`mlflow_setup`) para o registro dos traces das execuções do agente (ver [MLFlow, Monitoramento e Logging](#mlflow-monitoramento-e-logging)).
+1. Configuramos o MLflow (`mlflow_setup`) para o registro dos traces das execuções do agente (ver [Monitoramento: MLflow e Logging](#monitoramento-mlflow-e-logging)).
 2. Definimos o modelo a ser usado, aqui optamos por um modelo Anthropic, `claude-haiku-5-5`, o que exige uma chave de API definida no `.env`. Contudo, o framework é genérico o suficiente para podermos trocar por outro provedor se assim for desejado, exceto pelas ferramentas da web (`busca_web` e `coleta_web`), que rodam nos servidores da Anthropic e teriam de ser substituídas.
 3. Adicionamos as ferramentas criadas ao modelo LLM, construindo assim um agente de fato (ver [Ferramentas](#ferramentas)).
 4. Definimos o estado do agente, `EstadoAgente`, que guarda as informações necessárias para o processamento: os caminhos do dataset, dos gráficos e do template, o resumo (`summary`) e o histórico de mensagens (ver [Estado do agente](#estado-do-agente)).
@@ -148,7 +150,29 @@ O objetivo final do fluxo agêntico é a criação do **Boletim Epidemiológico 
 
 Em [boletim_epidemiologico_srag_exemplo.md](boletim_epidemiologico_srag_exemplo.md) fornecemos um exemplo de Boletim Epidemiológico preenchido.
 
-## MLFlow, Monitoramento e Logging
+## Monitoramento: MLflow e Logging
+
+O monitoramento da aplicação é feito por dois mecanismos complementares: o MLflow, para o comportamento do agente a cada execução, e o logging padrão do Python, para o andamento dos scripts. A seguir detalhamos cada um.
+
+### MLflow
+
+O MLflow registra o comportamento do agente em cada execução. Ao iniciar, o [agentic_workflow.py](../scripts/agentic_workflow.py) chama `mlflow_setup` (em [utils.py](../src/utils.py)), que:
+1. conecta ao servidor de tracking em `http://localhost:5000`;
+2. cria o experimento `boletim_epidemiologico`, caso ele ainda não exista, e registra no log se o experimento foi encontrado ou criado;
+3. liga o `mlflow.langchain.autolog()`, que registra automaticamente os traces do LangChain e do LangGraph;
+4. define esse experimento como o ativo.
+
+Com isso, todas as execuções ficam no mesmo experimento, e cada uma gera um trace com as chamadas feitas ao modelo e às ferramentas. Em cada trace é possível ver a entrada e a saída de cada etapa, a latência, o uso de tokens e o custo estimado.
+
+Para subir o servidor, basta usar `make mlflow` em um terminal separado ou, mais diretamente, `uv run mlflow server --host 127.0.0.1 --port 5000`. A interface fica em http://localhost:5000, e os dados são guardados no banco `mlflow.db`, na raiz do repositório, que é ignorado pelo git e removido por `make clean`. O servidor precisa estar no ar antes de o `agentic_workflow.py` ser executado: sem ele, o script falha já ao configurar o MLflow, antes de chamar o agente.
+
+### Logging
+
+O logging acompanha o andamento dos scripts. Tanto o [agentic_workflow.py](../scripts/agentic_workflow.py) quanto o [data_fetching_processing.py](../scripts/data_fetching_processing.py) usam `build_logger` (em [utils.py](../src/utils.py)), que configura o `logging` do Python com nível `INFO` e formato `data - nível - mensagem`, gravando em `logs/<script>.py.log`. O arquivo é sobrescrito a cada execução, e os `.log` são ignorados pelo git e removidos por `make clean`. O módulo [agent.py](../src/agent.py) também registra no mesmo arquivo. Para cada script, o log registra:
+- `agentic_workflow.py`: se o experimento do MLflow foi encontrado ou criado, o início da execução, com o modelo e o dataset usados, as mensagens de cada nó (`[tipo] texto`, incluindo as chamadas e as respostas das ferramentas) à medida que o nó termina, e o caminho do boletim gerado. Se o agente encerrar sem chamar `atualizar_summary`, registra o erro e o boletim não é gerado. Em caso de falha na execução, registra a exceção com o traceback.
+- `data_fetching_processing.py`: a leitura dos argumentos, a URL lida e o número de registros rotulados, a porcentagem de dados descartados, o tamanho da tabela limpa, um aviso quando a data de extração não é encontrada no nome do arquivo, o caminho dos dados e dos gráficos salvos e, em caso de falha na leitura ou na gravação, a exceção com o traceback.
+
+O MLflow mostra em detalhe cada chamada do agente, enquanto o log dá uma visão linear da execução dos scripts, incluindo o pipeline de dados, que o MLflow não cobre.
 
 ## Possíveis Extensões
 
