@@ -1,5 +1,10 @@
 # Desafio Artificial Intelligence Engineer Certification 2026
 
+| Campo | Valor |
+|-------|-------|
+| Autor | Matheus Fabri |
+| Data | 2026-11-17 |
+
 A Indicium HealthCare Inc. quer uma solução baseada em dados que ajude profissionais da área da saúde a acompanhar, em tempo real, a severidade e o avanço de surtos de doenças. Neste repositório criamos uma PoC para avaliar a viabilidade do projeto: um fluxo agêntico com LangGraph e Claude que gera relatórios automatizados sobre a Síndrome Respiratória Aguda Grave (SRAG) a partir de dados do Open DATASUS e de notícias recentes. O produto final é um Boletim Epidemiológico com uma análise estatística dos dados do Open DATASUS e a contextualização das informações coletadas de fontes externas.
 
 - [Features](#features)
@@ -23,9 +28,9 @@ A Indicium HealthCare Inc. quer uma solução baseada em dados que ajude profiss
 
 ## Requisitos
 
-- **Python 3.11 ou superior:** o projeto fixa a versão 3.11 em `.python-version`, e o `uv` a instala caso ela não esteja disponível.
+- **Python 3.11 ou superior:** o projeto fixa a versão 3.11 em `.python-version`.
 - **[uv](https://docs.astral.sh/uv/):** gerenciador de pacotes e ambientes usado para instalar as dependências travadas em `uv.lock` e executar os scripts (`uv run`).
-- **make (opcional):** usado pelos atalhos do [Makefile](Makefile), geralmente já instalado em Linux e macOS. Os comandos equivalentes estão em [Como utilizar a PoC](#como-utilizar-a-poc).
+- **make (opcional):** usado pelos atalhos do [Makefile](Makefile). Os comandos equivalentes estão em [Como utilizar a PoC](#como-utilizar-a-poc).
 - **Chave de API da Anthropic:** a variável `ANTHROPIC_API_KEY`, definida em um arquivo `.env` (o `.env.example` é o modelo), com acesso ao modelo usado pelo agente e às ferramentas de busca e coleta na web.
 
 ## Configuração
@@ -80,6 +85,7 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 ## Documentação
 
 - [docs/arquitetura.md](docs/arquitetura.md): arquitetura da solução, com o contexto, o pipeline de processamento dos dados, o fluxo do agente (workflow, prompt, ferramentas e boletim), o monitoramento com MLflow e logging, as possíveis extensões e a conclusão.
+- [docs/arquitetura.pdf](docs/arquitetura.pdf): versão em PDF do documento de arquitetura.
 - [docs/boletim_epidemiologico_srag_exemplo.md](docs/boletim_epidemiologico_srag_exemplo.md): exemplo de boletim epidemiológico preenchido.
 - [docs/prompt_agente.md](docs/prompt_agente.md): prompt de sistema do agente.
 - [docs/planning.md](docs/planning.md): planejamento da solução e das etapas do desafio.
@@ -94,6 +100,7 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 ├── data/                            # Datasets baixados e processados (arquivos .parquet ignorados pelo git)
 ├── docs/
 │   ├── arquitetura.md               # Arquitetura da solução: pipeline de dados, fluxo do agente, monitoramento e extensões
+│   ├── arquitetura.pdf              # Versão em PDF do documento de arquitetura
 │   ├── assets/                      # Imagens usadas nos documentos (gráficos do boletim de exemplo)
 │   ├── boletim_epidemiologico_srag_exemplo.md  # Exemplo de boletim preenchido pelo agente
 │   ├── planning.md                  # Planejamento da solução e das etapas do desafio
@@ -137,4 +144,4 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
   make agent
   ```
 
-- **Para saber mais:** a [arquitetura](docs/arquitetura.md) descreve a solução em detalhe, e o [boletim de exemplo](docs/boletim_epidemiologico_srag_exemplo.md) mostra o resultado final.
+- **Para saber mais:** a [arquitetura](docs/arquitetura.md) (também em [PDF](docs/arquitetura.pdf)) descreve a solução em detalhe, e o [boletim de exemplo](docs/boletim_epidemiologico_srag_exemplo.md) mostra o resultado final.

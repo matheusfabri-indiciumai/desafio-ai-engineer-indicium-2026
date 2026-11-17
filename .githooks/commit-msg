@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Validate that the commit message header follows this repo's Conventional
-# Commits convention (see .claude/skills/stage-and-commit): "<tipo>: <resumo>"
-# with tipo in feat|fix|refactor|chore|docs|test.
+# Commits convention: "<tipo>: <resumo>" with tipo in feat|fix|refactor|chore|docs|test.
 set -euo pipefail
 
 commit_msg_file="$1"

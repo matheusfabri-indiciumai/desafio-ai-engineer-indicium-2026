@@ -1,5 +1,10 @@
 # PoC — Arquitetura do Assistente HealthCare Bot
 
+| Campo | Valor |
+|-------|-------|
+| Autor | Matheus Fabri |
+| Data | 2026-11-17 |
+
 - [Contexto](#contexto)
 - [Pipeline de Processamento de Dados](#pipeline-de-processamento-de-dados)
 - [Fluxo Agêntico](#fluxo-agêntico)

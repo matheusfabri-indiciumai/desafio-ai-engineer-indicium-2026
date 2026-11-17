@@ -1,5 +1,10 @@
 # Planejamento -- Desafio Artificial Intelligence Engineer Certification 2026
 
+| Campo | Valor |
+|-------|-------|
+| Autor | Matheus Fabri |
+| Data | 2026-11-17 |
+
 Este arquivo contém um planejamento da solução proposta para a resolução do desafio *Artificial Intelligence Engineer Certification* -- Indicium AI 2026.
 
 ## Sumário
@@ -140,4 +145,4 @@ Finalizamos o planejamento com a documentação e entrega do desafio.
   - [X] Detalhar Logging e MLFlow.
   - [X] Detalhar possíveis extensões da PoC para um produto final.
   - [X] Renderizar os prompts.
-- [ ] Entrega via plataforma da Indicium AI training.
+- [X] Entrega via plataforma da Indicium AI training.
