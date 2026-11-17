@@ -17,6 +17,8 @@
 
 ## Contexto
 
+TODO
+
 ## Pipeline de Processamento de Dados
 
 Com base na análise exploratória de dados feita no notebook [eda.ipynb](../eda.ipynb), realizamos primeiramente o download, a limpeza e o processamento dos dados, para que o agente possa, com base neles, criar o Boletim Epidemiológico. Todo o processamento é feito pelo [data_fetching_processing.py](../scripts/data_fetching_processing.py), seguindo os passos:
@@ -176,4 +178,17 @@ O MLflow mostra em detalhe cada chamada do agente, enquanto o log dá uma visão
 
 ## Possíveis Extensões
 
+Este repositório é uma PoC da solução proposta. Para colocá-la em produção, poderíamos realizar uma série de mudanças:
+- **Trigger:** Neste PoC não definimos o gatilho do processamento. Um caminho possível é gerar o relatório periodicamente, por exemplo toda semana, por meio de um job em uma plataforma como Airflow ou Databricks. Caso desejemos que analistas, médicos e outros profissionais interessados possam gerar relatórios sob demanda, poderíamos colocar um trigger via Slack (caso a companhia o utilize) no qual, por meio de um comando, como `/gerar-relatorio-srag`, os usuários poderiam gerar relatórios e recebê-los via Slack ou e-mail.
+- **Fontes:** Hoje o agente busca notícias na web em quatro fontes (Ministério da Saúde, Fiocruz, Agência Brasil e CNN Brasil), com um limite de 5 usos por execução de cada ferramenta da web. Poderíamos realizar uma análise profunda de possíveis fontes em que diferentes agentes reuniriam a informação de fontes distintas, como notícias de imprensa, agências governamentais e periódicos médicos. Em seguida, reuniríamos todas essas afirmações e as sintetizaríamos em um Boletim Epidemiológico.
+- **Plataforma de dados:** Poderíamos utilizar uma plataforma de dados com suporte robusto a processamento de dados e modelos de IA, como o Databricks. Lá já teríamos uma plataforma tanto para armazenamento e processamento de dados quanto para o uso de uma ampla gama de modelos de IA comerciais e open-source via Databricks AI Gateway, com governança unificada e extenso monitoramento via MLflow, nativamente integrado à plataforma.
+- **Processamento e Armazenamento de dados:** Um excelente uso do Databricks seria para a criação de jobs de extração e processamento dos dados com ativação periódica (por exemplo, diária ou semanal). Poderíamos extrair dados de diferentes fontes, agregá-los e processá-los via Lakeflow Jobs ou ferramentas open-source como o dbt, para termos dados unificados, limpos e preparados para a análise. Além disso, todos os dados seriam armazenados em tabelas Delta, com consultas feitas via SQL, o que nos leva ao próximo ponto.
+- **Extensão das ferramentas:** Com os dados já limpos, processados e armazenados em tabelas Delta, poderíamos dar ao agente instruções e acesso (somente de consulta, `SELECT`) às tabelas para ele decidir quais métricas extrair, permitindo maior flexibilidade, porém com maior complexidade de orquestração. Isso tornaria a solução altamente adaptável ao cenário epidemiológico. Além disso, poderíamos estender a análise não somente para o entendimento de dados históricos, mas também para uma análise preditiva, usando modelos de ML que nos permitiriam explorar cenários epidemiológicos, tudo isso de maneira nativa no Databricks, utilizando modelos registrados e treinados com os nossos dados.
+- **Arquitetura:** Para uma solução em produção, poderíamos explorar arquiteturas multiagentes, com cada agente focado em uma tarefa, como cálculo estatístico, análise preditiva, busca de notícias e boletins governamentais e síntese de informações de diferentes fontes. Os agentes por fonte, descritos no item **Fontes**, são um exemplo disso. Além disso, passaríamos do uso apenas de prompts para prompts combinados com skills, introduzindo contexto valioso de negócio aos agentes.
+- **Integrações Externas:** Para a publicação do Boletim Epidemiológico, poderíamos utilizar plataformas externas, como Google Docs/Drive, para disponibilizar o relatório em um formato familiar a todos os usuários, em que eles poderiam ler e interagir de maneira mais intuitiva com o boletim gerado.
+
+Dessa forma, vemos que é possível expandir o PoC de diferentes maneiras. A escolha da melhor solução depende de restrições orçamentárias, de pessoal, de acesso às tecnologias e regulatórias, além do objetivo de negócio.
+
 ## Conclusão
+
+TODO
