@@ -1,6 +1,54 @@
 # Desafio Artificial Intelligence Engineer Certification 2026
 
-## Como executar
+A Indicium HealthCare Inc. quer uma solução baseada em dados que ajude profissionais da área da saúde a acompanhar, em tempo real, a severidade e o avanço de surtos de doenças. Neste repositório criamos uma PoC para avaliar a viabilidade do projeto: um fluxo agêntico com LangGraph e Claude que gera relatórios automatizados sobre a Síndrome Respiratória Aguda Grave (SRAG) a partir de dados do Open DATASUS e de notícias recentes. O produto final é um Boletim Epidemiológico com uma análise estatística dos dados do Open DATASUS e a contextualização das informações coletadas de fontes externas.
+
+- [Features](#features)
+- [Requisitos](#requisitos)
+- [Configuração](#configuração)
+- [Como utilizar](#como-utilizar)
+  - [Atalhos com make](#atalhos-com-make)
+- [Análise exploratória](#análise-exploratória)
+- [Documentação](#documentação)
+- [Estrutura do projeto](#estrutura-do-projeto)
+- [TL;DR](#tldr)
+
+## Features
+
+- **Fluxo agêntico com LangGraph e Claude:** o agente é um grafo com os nós `assistente`, `tools` e `criar_boletim`, que usa um modelo da Anthropic (por padrão `claude-haiku-5-5`, configurável com `--model`).
+- **Múltiplas ferramentas:** sete ferramentas locais consultam o dataset limpo (estatísticas do número de casos, crescimento mensal e taxas de mortalidade, de ocupação de UTI e de vacinação) e gravam o resumo do boletim.
+- **Busca e coleta de informações na web:** duas ferramentas da web buscam e leem notícias recentes sobre SRAG, em domínios permitidos, para contextualizar os números.
+- **Análise exploratória dos dados:** o [eda.ipynb](eda.ipynb) documenta a exploração dos dados, para uma melhor compreensão do cenário e para embasar as escolhas do processamento.
+- **Pipeline de processamento de dados:** o [data_fetching_processing.py](scripts/data_fetching_processing.py) lê o dataset do Open DATASUS direto da URL, mantém as colunas de interesse, rotula os valores e descarta os registros com nulos. Depois salva o dataset limpo, com metadados (data de extração, data de criação e porcentagem de dados descartados), e gera os gráficos de casos dos últimos 30 dias e 12 meses.
+- **Boletim epidemiológico a partir de um template fixo:** o agente grava um resumo, e o template é preenchido de forma determinística, gerando um boletim padronizado em markdown ([exemplo](docs/boletim_epidemiologico_srag_exemplo.md)).
+- **Monitoramento com MLflow:** os traces de cada execução do agente (chamadas, latência, tokens e custo) ficam registrados no MLflow, e o andamento dos scripts, nos logs.
+
+## Requisitos
+
+- **Python 3.11 ou superior:** o projeto fixa a versão 3.11 em `.python-version`, e o `uv` a instala caso ela não esteja disponível.
+- **[uv](https://docs.astral.sh/uv/):** gerenciador de pacotes e ambientes usado para instalar as dependências travadas em `uv.lock` e executar os scripts (`uv run`).
+- **make (opcional):** usado pelos atalhos do [Makefile](Makefile), geralmente já instalado em Linux e macOS. Os comandos equivalentes estão em [Como utilizar](#como-utilizar).
+- **Chave de API da Anthropic:** a variável `ANTHROPIC_API_KEY`, definida em um arquivo `.env` (o `.env.example` é o modelo), com acesso ao modelo usado pelo agente e às ferramentas de busca e coleta na web.
+
+## Configuração
+
+Para a configuração inicial execute os comandos a seguir na root do repositório. Para instalar as dependências do projeto usamos:
+```bash
+uv sync
+```
+Esse comando cria o ambiente virtual `.venv` com as versões travadas em `uv.lock`. Já para instalar as dependências para desenvolvimento, que incluem, além das de uso, o `ipykernel` (para abrir o [eda.ipynb](eda.ipynb)), o `ruff`, o `basedpyright` e o `pre-commit` use:
+```bash
+uv sync --extra dev
+```
+Para contribuir com o código é sugerido instalar os hooks de pre-commit, que formatam e verificam o código, validam o formato das mensagens de commit e renderizam o prompt do agente:
+```bash
+uv run pre-commit install
+```
+Para o uso de modelos Anthropic é necessário gerar uma chave de API da Anthropic no [Console da Anthropic](https://platform.claude.com/settings/keys): em **Settings → API keys**, clique em **Create key**, dê um nome à chave e copie o valor, que só é exibido uma vez. Em seguida, crie o arquivo `.env` a partir do modelo e preencha a variável `ANTHROPIC_API_KEY` com a chave. O `.env` é ignorado pelo git, então a chave não vai para o repositório. Para a cópia do `.env.example` utilize:
+```bash
+cp .env.example .env
+```
+
+## Como utilizar
 
 Execute os comandos sempre a partir da raiz do repositório, pois os scripts usam caminhos relativos a ela. O andamento de cada script é registrado em `logs/<script>.py.log`.
 
@@ -84,3 +132,5 @@ O [eda.ipynb](eda.ipynb) documenta a exploração dos dados que embasa as escolh
 ├── README.md
 └── uv.lock                          # Versões travadas das dependências
 ```
+
+## TL;DR
